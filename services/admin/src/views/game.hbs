@@ -25,11 +25,11 @@
     currently running operations.
 
     {{#if game.is_paused}}
-        <form action="/game/{{game.id}}/pause/delete" method="post">
+        <form action="/games/{{game.id}}/pause/delete" method="post">
             <button type="submit">Resume processing</button>
         </form>
     {{else}}
-        <form action="/game/{{game.id}}/pause/post" method="post">
+        <form action="/games/{{game.id}}/pause/post" method="post">
             <button>Pause processing</button>
         </form>
     {{/if}}
@@ -37,7 +37,7 @@
 
 <h3>Clips</h3>
 <p>
-    <a href="/game/{{game.id}}/clips">Browse clips</a>
+    <a href="/games/{{game.id}}/clips">Browse clips</a>
 </p>
 
 <p>
@@ -48,21 +48,21 @@
     You can trigger this job manually here to avoid waiting, to fetch clips
     in custom time range or to fetch clips for a paused game.
 
-    <form action="/game/{{game.id}}/clips/fetch/post" method="post">
-        <label for="recorded-at-most-hours-ago">
+    <form action="/games/{{game.id}}/clips/fetch/post" method="post">
+        <label for="recorded_at_most_hours_ago">
             Select clips recorded <i>at most</i> this many hours ago.
             If you want to continue from the oldest clip in <i>newnu.tv</i>
             database then set this to 0 (recommended).
         </label>
         Newer than <input
             type="number"
-            name="recorded-at-most-hours-ago"
-            id="recorded-at-most-hours-ago"
+            name="recorded_at_most_hours_ago"
+            id="recorded_at_most_hours_ago"
             max="168"
             value="0"
         > hours
 
-        <label for="recorded-at-least-hours-ago">
+        <label for="recorded_at_least_hours_ago">
             Select clips recorded <i>at least</i> this many hours ago.
             Must be greater than above.
             A good value is 8 hours, because then the clip will have accumulated
@@ -70,8 +70,8 @@
         </label>
         Older than <input
             type="number"
-            name="recorded-at-least-hours-ago"
-            id="recorded-at-least-hours-ago"
+            name="recorded_at_least_hours_ago"
+            id="recorded_at_least_hours_ago"
             min="1"
             max="168"
         > hours
@@ -84,7 +84,7 @@
 <h3 style="color: red">Danger zone</h3>
 <p>
     <form
-        action="/game/{{game.id}}/delete"
+        action="/games/{{game.id}}/delete"
         method="post"
         onsubmit="return confirm('Delete {{game.name}} from database?')"
     >

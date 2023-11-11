@@ -74,10 +74,21 @@ impl IntoResponse for AppError {
     }
 }
 
+impl std::fmt::Display for AppError {
+    fn fmt(
+        &self,
+        f: &mut std::fmt::Formatter<'_>,
+    ) -> StdResult<(), std::fmt::Error> {
+        write!(f, "{}", self.message)
+    }
+}
+
+impl StdError for AppError {}
+
 impl From<AnyError> for AppError {
     fn from(err: AnyError) -> Self {
         Self {
-            message: err.to_string().into(),
+            message: format!("{err}").into(),
             kind: AppErrorKind::Other,
             status: StatusCode::INTERNAL_SERVER_ERROR,
         }
@@ -87,7 +98,7 @@ impl From<AnyError> for AppError {
 impl From<handlebars::RenderError> for AppError {
     fn from(err: handlebars::RenderError) -> Self {
         Self {
-            message: err.to_string().into(),
+            message: format!("handlebars: {err}").into(),
             kind: AppErrorKind::Other,
             status: StatusCode::INTERNAL_SERVER_ERROR,
         }
@@ -117,20 +128,19 @@ impl From<tonic::Status> for AppError {
 impl From<rusqlite::Error> for AppError {
     fn from(err: rusqlite::Error) -> Self {
         Self {
-            message: err.to_string().into(),
+            message: format!("rusqlite: {err}").into(),
             kind: AppErrorKind::Other,
             status: StatusCode::INTERNAL_SERVER_ERROR,
         }
     }
 }
 
-impl std::fmt::Display for AppError {
-    fn fmt(
-        &self,
-        f: &mut std::fmt::Formatter<'_>,
-    ) -> StdResult<(), std::fmt::Error> {
-        write!(f, "{}", self.message)
+impl From<serde_json::Error> for AppError {
+    fn from(err: serde_json::Error) -> Self {
+        Self {
+            message: format!("serde_json: {err}").into(),
+            kind: AppErrorKind::Other,
+            status: StatusCode::INTERNAL_SERVER_ERROR,
+        }
     }
 }
-
-impl StdError for AppError {}

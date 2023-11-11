@@ -4,11 +4,12 @@ use tonic::{Request, Response, Status};
 
 #[tonic::async_trait]
 impl Worker for RpcWorker {
-    async fn download_clip(
+    async fn download_clips(
         &self,
-        _request: Request<rpc::DownloadClipRequest>,
+        request: Request<rpc::DownloadClipsRequest>,
     ) -> StdResult<Response<()>, Status> {
-        debug!("Download clip");
+        let rpc::DownloadClipsRequest { clips } = request.into_inner();
+        debug!("Download {} clips", clips.len());
 
         // TODO
 

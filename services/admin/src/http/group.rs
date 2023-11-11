@@ -1,0 +1,84 @@
+use axum::{
+    extract::{Path, Query},
+    response::{Html, Redirect},
+    Form,
+};
+use serde::Deserialize;
+use std::sync::Arc;
+
+use crate::{models::clip::GroupParams, prelude::*};
+
+/// For convenience we use the same struct as the clip listing.
+/// This in turn means we get the params from query rather than body.
+pub async fn from_clips_query(
+    State(s): State<g::HttpState>,
+    Path(game_id): Path<twitch::models::GameId>,
+    Query(query): Query<models::clip::Filter>,
+) -> Result<Redirect> {
+    let db = s.db.lock().await;
+
+    // get current datetime in UTC and append it to the game name
+    let now = chrono::Utc::now().to_rfc3339();
+    let game_name = db::game::select_by_id(&db, &game_id)?.name;
+    let group_name = format!("{game_name} {now}");
+
+    let color = generate_random_color();
+
+    let group_id = db::group::insert(&db, &group_name, &color)?;
+    db::group::update_metadata_json(
+        &db,
+        &group_id,
+        serde_json::to_value(GroupParams {
+            game_id,
+            filter: query,
+        })?,
+    )?;
+
+    drop(db);
+
+    crate::job::map_clips_to_groups::once(Arc::clone(&s.db), &group_id).await?;
+
+    Ok(Redirect::to(&format!("/groups/{group_id}")))
+}
+
+#[derive(Deserialize)]
+pub struct NewGroup {
+    name: String,
+    /// If not provided, then one is generated.
+    color: Option<String>,
+}
+pub async fn create(
+    State(s): State<g::HttpState>,
+    Form(NewGroup { name, color }): Form<NewGroup>,
+) -> Result<Redirect> {
+    let color = color.unwrap_or_else(generate_random_color);
+
+    let db = s.db.lock().await;
+    let group_id = db::group::insert(&db, &name, &color)?;
+
+    Ok(Redirect::to(&format!("/groups/{group_id}")))
+}
+
+pub async fn show(
+    State(s): State<g::HttpState>,
+    Path(group_id): Path<models::group::GroupId>,
+    Query(mut query): Query<models::clip::Pagination>,
+) -> Result<Html<String>> {
+    let db = s.db.lock().await;
+
+    if query.page_size.is_none() {
+        query.page_size = Some(db::setting::default_page_size(&db)?);
+    }
+
+    let group = db::group::select_by_id(&db, &group_id)?;
+    let (total_count, clips) =
+        db::clip::select_by_group_id(&db, &group_id, &query)?;
+
+    s.views.group(&group, total_count, &clips, &query)
+}
+
+fn generate_random_color() -> String {
+    use rand::Rng;
+    let mut rng = rand::thread_rng();
+    format!("#{:06x}", rng.gen::<u32>())
+}

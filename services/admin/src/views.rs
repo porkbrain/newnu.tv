@@ -43,6 +43,8 @@ impl Views {
 
         h.register_template_string("clips", include_str!("views/clips.hbs"))?;
 
+        h.register_template_string("group", include_str!("views/group.hbs"))?;
+
         Ok(Self {
             handlebars: Arc::new(h),
         })
@@ -90,6 +92,9 @@ impl Views {
             db::setting::fetch_new_game_clips_cron(db)?;
         let recorded_at_least_hours_ago =
             db::setting::recorded_at_least_hours_ago(db)?;
+        let map_clips_to_groups_cron =
+            db::setting::map_clips_to_groups_cron(db)?;
+        let default_page_size = db::setting::default_page_size(db)?;
 
         self.handlebars
             .render(
@@ -100,6 +105,8 @@ impl Views {
                         "settings": {
                             "fetch_new_game_clips_cron": fetch_new_game_clips_cron,
                             "recorded_at_least_hours_ago": recorded_at_least_hours_ago,
+                            "map_clips_to_groups_cron": map_clips_to_groups_cron,
+                            "default_page_size": default_page_size,
                         }
                     }
                 ),
@@ -113,9 +120,11 @@ impl Views {
         db: &DbConn,
         game_id: &GameId,
         total_count: usize,
-        clips: Vec<models::clip::Clip>,
-        query: models::clip::ShowParams,
+        clips: &[models::clip::Clip],
+        query: &models::clip::ShowParams,
     ) -> Result<Html<String>> {
+        trace!("Rendering clips for game {game_id}");
+
         let game = db::game::select_by_id(db, game_id)?;
 
         self.handlebars
@@ -127,6 +136,30 @@ impl Views {
                     "total_count": total_count,
                     "query": query,
                     "clips": clips,
+                }),
+            )
+            .map(Html)
+            .map_err(From::from)
+    }
+
+    pub fn group(
+        &self,
+        group: &models::group::Group,
+        total_count: usize,
+        clips: &[models::clip::Clip],
+        query: &models::clip::Pagination,
+    ) -> Result<Html<String>> {
+        trace!("Rendering clips for group {}", group.id);
+
+        self.handlebars
+            .render(
+                "group",
+                &json!({
+                    "parent": "base_xl",
+                    "group": group,
+                    "total_count": total_count,
+                    "clips": clips,
+                    "query": query,
                 }),
             )
             .map(Html)
@@ -157,6 +190,7 @@ mod helpers {
     });
     handlebars_helper!(contains: |a: Value, v: Value| match a {
         Value::Array(a) => a.contains(&v),
+        Value::Null => false,
         _ => panic!("contains helper expects array and string"),
     });
     handlebars_helper!(empty: |v: Value| match v {

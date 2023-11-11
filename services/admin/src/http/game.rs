@@ -40,7 +40,7 @@ pub async fn add(
     let db = s.db.lock().await;
     db::game::insert(&db, &game)?;
 
-    Ok(Redirect::to(&format!("/game/{game_id}")))
+    Ok(Redirect::to(&format!("/games/{game_id}")))
 }
 
 pub async fn delete(
@@ -59,7 +59,7 @@ pub async fn pause(
 ) -> Result<Redirect> {
     set_is_paused(&s, game_id.clone(), true).await?;
 
-    Ok(Redirect::to(&format!("/game/{game_id}")))
+    Ok(Redirect::to(&format!("/games/{game_id}")))
 }
 
 pub async fn resume(
@@ -68,7 +68,7 @@ pub async fn resume(
 ) -> Result<Redirect> {
     set_is_paused(&s, game_id.clone(), false).await?;
 
-    Ok(Redirect::to(&format!("/game/{game_id}")))
+    Ok(Redirect::to(&format!("/games/{game_id}")))
 }
 
 async fn set_is_paused(

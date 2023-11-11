@@ -22,8 +22,8 @@
 
     <form action="/settings/put" method="post">
         <textarea
-            name="fetch-new-game-clips-cron"
-            id="fetch-new-game-clips-cron"
+            name="fetch_new_game_clips_cron"
+            id="fetch_new_game_clips_cron"
             cols="50"
         >{{settings.fetch_new_game_clips_cron}}</textarea>
 
@@ -43,9 +43,50 @@
     <form action="/settings/put" method="post">
         <input
             type="number"
-            name="recorded-at-least-hours-ago"
-            id="recorded-at-least-hours-ago"
+            name="recorded_at_least_hours_ago"
+            id="recorded_at_least_hours_ago"
             value="{{settings.recorded_at_least_hours_ago}}"
+        >
+
+        <button>Save</button>
+    </form>
+</p>
+
+<h3><code>map_clips_to_groups_cron</code></h3>
+<p>
+
+    Cron expression which controls how often to look for new clips to map to
+    each group that was created from query criteria.
+    This changes the frequency of triggering a job.
+    <br>
+    Restart the app to apply changes.
+
+    <pre>
+        format:    sec    min   hour   day of month   month   day of week   year
+        actual:    {{settings.map_clips_to_groups_cron}}
+    </pre>
+
+    <form action="/settings/put" method="post">
+        <textarea
+            name="map_clips_to_groups_cron"
+            id="map_clips_to_groups_cron"
+            cols="50"
+        >{{settings.map_clips_to_groups_cron}}</textarea>
+
+        <button>Save</button>
+    </form>
+</p>
+
+<h3><code>default_page_size</code></h3>
+<p>
+    How many items (clips, etc.) to show per page by default.
+
+    <form action="/settings/put" method="post">
+        <input
+            type="number"
+            name="default_page_size"
+            id="default_page_size"
+            value="{{settings.default_page_size}}"
         >
 
         <button>Save</button>

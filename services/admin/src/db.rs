@@ -1,5 +1,7 @@
 pub mod clip;
 pub mod game;
+/// Groups clips based on some criteria or manually
+pub mod group;
 /// Stores various settings in db instead of constants so that they can be
 /// changed via dashboard
 pub mod setting;
@@ -41,5 +43,7 @@ fn migrations() -> Migrations<'static> {
             .down(include_str!("../migrations/0002.down.sql")),
         M::up(include_str!("../migrations/0003.up.sql"))
             .down(include_str!("../migrations/0003.down.sql")),
+        M::up(include_str!("../migrations/0004.up.sql"))
+            .down(include_str!("../migrations/0004.down.sql")),
     ])
 }

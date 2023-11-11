@@ -9,7 +9,6 @@ use std::sync::Arc;
 use crate::prelude::*;
 
 #[derive(Deserialize, Debug)]
-#[serde(rename_all = "kebab-case")]
 pub struct TriggerFetchClipsJob {
     #[serde(deserialize_with = "g::empty_string_is_none")]
     pub recorded_at_most_hours_ago: Option<usize>,
@@ -55,17 +54,22 @@ pub async fn trigger_fetch(
         game_id.clone(),
     ));
 
-    Ok(Redirect::to(&format!("/game/{game_id}")))
+    Ok(Redirect::to(&format!("/games/{game_id}")))
 }
 
 pub async fn show(
     State(s): State<g::HttpState>,
     Path(game_id): Path<twitch::models::GameId>,
-    Query(query): Query<models::clip::ShowParams>,
+    Query(mut query): Query<models::clip::ShowParams>,
 ) -> Result<Html<String>> {
     let db = s.db.lock().await;
 
+    if query.pagination.page_size.is_none() {
+        query.pagination.page_size = Some(db::setting::default_page_size(&db)?);
+    }
+
+    trace!("Listing clips for game {game_id}");
     let (total_count, clips) = db::clip::list(&db, &game_id, &query)?;
 
-    s.views.clips(&db, &game_id, total_count, clips, query)
+    s.views.clips(&db, &game_id, total_count, &clips, &query)
 }

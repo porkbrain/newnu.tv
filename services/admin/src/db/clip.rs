@@ -1,42 +1,49 @@
+use anyhow::Context;
 use itertools::Itertools;
 use rusqlite::named_params;
 use std::{rc::Rc, time::Duration};
 use twitch::models::GameId;
 
-use crate::models::clip::{Clip, ShowParams};
+use crate::models::clip::{Clip, Filter, Pagination, ShowParams};
 use crate::prelude::*;
 
 pub fn list(
     db: &DbConn,
     game_id: &GameId,
-    request: &ShowParams,
+    ShowParams { pagination, filter }: &ShowParams,
 ) -> Result<(usize, Vec<Clip>)> {
-    let ShowParams {
+    let Filter {
         broadcaster_name,
         langs,
         max_recorded_at,
         min_recorded_at,
+        title_like,
+        view_count_max,
+        view_count_min,
+    } = filter;
+    let Pagination {
         page_offset,
         page_size,
         sort_by,
         sort_direction_asc,
-        title_like,
-        view_count_max,
-        view_count_min,
-    } = request;
+    } = pagination;
 
-    if *page_size == 0 {
-        return Err(AppError::bad_request(
-            "page_size must be greater than 0".to_string(),
-        ));
-    }
+    let page_size = match page_size {
+        Some(0) => {
+            return Err(AppError::bad_request(
+                "page_size must be greater than 0".to_string(),
+            ));
+        }
+        Some(page_size) => *page_size,
+        None => db::setting::default_page_size(&db)?,
+    };
 
     let sort_by: &str = From::from(*sort_by);
     let sort_direction = if *sort_direction_asc { "ASC" } else { "DESC" };
     // array feature of sqlite
     let langs = Rc::new(
         langs
-            .into_iter()
+            .iter()
             .cloned()
             .map(rusqlite::types::Value::from)
             .collect_vec(),
@@ -65,7 +72,8 @@ pub fn list(
     };
     let total_count: i64 = db
         .prepare(&total_count_sql)?
-        .query_row(params, |row| row.get(0))?;
+        .query_row(params, |row| row.get(0))
+        .context("Total clips")?;
 
     let paginated_sql = format!(
         "SELECT
@@ -102,11 +110,88 @@ pub fn list(
         ":view_count_max": view_count_max,
         ":view_count_min": view_count_min,
     };
+
     let clips = db
-        .prepare(&paginated_sql)?
+        .prepare_cached(&paginated_sql)?
         .query_map(params, |row| Clip::try_from(row))?
         .map(|row| row.map_err(AppError::from))
-        .try_collect()?;
+        .try_collect()
+        .context("List paginated clips")?;
+
+    Ok((total_count as usize, clips))
+}
+
+pub fn select_by_group_id(
+    db: &DbConn,
+    group_id: &models::group::GroupId,
+    query: &models::clip::Pagination,
+) -> Result<(usize, Vec<Clip>)> {
+    let page_size = match query.page_size {
+        Some(0) => {
+            return Err(AppError::bad_request(
+                "page_size must be greater than 0".to_string(),
+            ));
+        }
+        Some(page_size) => page_size,
+        None => db::setting::default_page_size(&db)?,
+    };
+
+    let total_count: i64 = db
+        .prepare_cached(&format!(
+            "SELECT COUNT(*) FROM clips
+            INNER JOIN group_clips ON group_clips.clip_id = clips.id
+            WHERE group_clips.group_id = :group_id"
+        ))?
+        .query_row(
+            named_params! {
+                ":group_id": group_id,
+            },
+            |row| row.get(0),
+        )
+        .context("clip::select_by_group_id total_count")?;
+
+    let sort_by: &str = From::from(query.sort_by);
+    let sort_direction = if query.sort_direction_asc {
+        "ASC"
+    } else {
+        "DESC"
+    };
+
+    let mut stmt = db.prepare_cached(&format!(
+        "SELECT
+            c.broadcaster_id AS broadcaster_id,
+            c.broadcaster_name AS broadcaster_name,
+            c.created_at AS created_at,
+            c.creator_name AS creator_name,
+            c.duration AS duration,
+            c.game_id AS game_id,
+            c.id AS id,
+            c.lang AS lang,
+            c.recorded_at AS recorded_at,
+            c.thumbnail_url AS thumbnail_url,
+            c.title AS title,
+            c.updated_at AS updated_at,
+            c.url AS url,
+            c.view_count AS view_count
+        FROM clips c
+        INNER JOIN group_clips ON group_clips.clip_id = c.id
+        WHERE group_clips.group_id = :group_id
+        ORDER BY {sort_by} {sort_direction}
+        LIMIT :page_size
+        OFFSET :page_offset;",
+    ))?;
+    let clips = stmt
+        .query_map(
+            named_params! {
+                ":group_id": group_id,
+                ":page_size": page_size,
+                ":page_offset": query.page_offset,
+            },
+            |row| Clip::try_from(row),
+        )?
+        .map(|res| res.map_err(AppError::from))
+        .try_collect()
+        .context("clip::select_by_group_id")?;
 
     Ok((total_count as usize, clips))
 }
@@ -151,9 +236,12 @@ mod tests {
             &db,
             &GameId::from("55"),
             &ShowParams {
-                page_size: 5,
-                sort_by: ShowSortBy::RecordedAt,
-                sort_direction_asc: true,
+                pagination: Pagination {
+                    page_size: Some(5),
+                    sort_by: ShowSortBy::RecordedAt,
+                    sort_direction_asc: true,
+                    ..Default::default()
+                },
                 ..Default::default()
             },
         )?;
@@ -173,9 +261,12 @@ mod tests {
             &db,
             &GameId::from("55"),
             &ShowParams {
-                page_size: 1,
-                sort_by: ShowSortBy::RecordedAt,
-                sort_direction_asc: false,
+                pagination: Pagination {
+                    page_size: Some(1),
+                    sort_by: ShowSortBy::RecordedAt,
+                    sort_direction_asc: false,
+                    ..Default::default()
+                },
                 ..Default::default()
             },
         )?;
@@ -194,9 +285,12 @@ mod tests {
             &db,
             &GameId::from("55"),
             &ShowParams {
-                page_size: 2,
-                sort_by: ShowSortBy::ViewCount,
-                sort_direction_asc: true,
+                pagination: Pagination {
+                    page_size: Some(2),
+                    sort_by: ShowSortBy::ViewCount,
+                    sort_direction_asc: true,
+                    ..Default::default()
+                },
                 ..Default::default()
             },
         )?;
@@ -216,11 +310,17 @@ mod tests {
             &db,
             &GameId::from("55"),
             &ShowParams {
-                page_size: 2,
-                sort_by: ShowSortBy::ViewCount,
-                sort_direction_asc: false,
-                view_count_max: Some(1500),
-                view_count_min: 500,
+                pagination: Pagination {
+                    page_size: Some(2),
+                    sort_by: ShowSortBy::ViewCount,
+                    sort_direction_asc: false,
+                    ..Default::default()
+                },
+                filter: Filter {
+                    view_count_max: Some(1500),
+                    view_count_min: 500,
+                    ..Default::default()
+                },
                 ..Default::default()
             },
         )?;
@@ -240,8 +340,14 @@ mod tests {
             &db,
             &GameId::from("55"),
             &ShowParams {
-                title_like: Some("pytlik".to_string()),
-                page_size: 1,
+                pagination: Pagination {
+                    page_size: Some(1),
+                    ..Default::default()
+                },
+                filter: Filter {
+                    title_like: Some("pytlik".to_string()),
+                    ..Default::default()
+                },
                 ..Default::default()
             },
         )?;
@@ -260,10 +366,12 @@ mod tests {
             &db,
             &GameId::from("55"),
             &ShowParams {
-                page_size: 1,
-                page_offset: 1,
-                sort_by: ShowSortBy::RecordedAt,
-                sort_direction_asc: true,
+                pagination: Pagination {
+                    page_size: Some(1),
+                    page_offset: 1,
+                    sort_by: ShowSortBy::RecordedAt,
+                    sort_direction_asc: true,
+                },
                 ..Default::default()
             },
         )?;
@@ -282,8 +390,14 @@ mod tests {
             &db,
             &GameId::from("55"),
             &ShowParams {
-                page_size: 10,
-                langs: vec!["en".to_string()],
+                pagination: Pagination {
+                    page_size: Some(10),
+                    ..Default::default()
+                },
+                filter: Filter {
+                    langs: vec!["en".to_string()],
+                    ..Default::default()
+                },
                 ..Default::default()
             },
         )?;
@@ -294,8 +408,14 @@ mod tests {
             &db,
             &GameId::from("55"),
             &ShowParams {
-                page_size: 10,
-                langs: vec!["nl".to_string()],
+                pagination: Pagination {
+                    page_size: Some(10),
+                    ..Default::default()
+                },
+                filter: Filter {
+                    langs: vec!["nl".to_string()],
+                    ..Default::default()
+                },
                 ..Default::default()
             },
         )?;
@@ -306,8 +426,14 @@ mod tests {
             &db,
             &GameId::from("55"),
             &ShowParams {
-                page_size: 10,
-                langs: vec!["nl".to_string(), "cs".to_string()],
+                pagination: Pagination {
+                    page_size: Some(10),
+                    ..Default::default()
+                },
+                filter: Filter {
+                    langs: vec!["nl".to_string(), "cs".to_string()],
+                    ..Default::default()
+                },
                 ..Default::default()
             },
         )?;
@@ -325,10 +451,16 @@ mod tests {
             &db,
             &GameId::from("55"),
             &ShowParams {
-                page_size: 2,
-                broadcaster_name: Some("Davaeorn".to_string()),
-                sort_direction_asc: true,
-                sort_by: ShowSortBy::RecordedAt,
+                pagination: Pagination {
+                    page_size: Some(2),
+                    sort_direction_asc: true,
+                    sort_by: ShowSortBy::RecordedAt,
+                    ..Default::default()
+                },
+                filter: Filter {
+                    broadcaster_name: Some("Davaeorn".to_string()),
+                    ..Default::default()
+                },
                 ..Default::default()
             },
         )?;
@@ -336,6 +468,42 @@ mod tests {
         assert_eq!(clips.len(), 2);
         assert_eq!(clips[0].id, "MoistUnsightlyBatteryTwitchRPG");
         assert_eq!(clips[1].id, "EsteemedShinyAsteriskBibleThump");
+
+        Ok(())
+    }
+
+    #[test]
+    fn it_groups_clips() -> Result<()> {
+        let db = prepare_db()?;
+
+        let gid = db::group::insert(&db, "test", "red")?;
+
+        [
+            "FlirtyTenuousCasetteHoneyBadger",
+            "EsteemedShinyAsteriskBibleThump",
+            "MoistUnsightlyBatteryTwitchRPG",
+        ]
+        .iter()
+        .for_each(|clip_id| {
+            let clip_id = ClipId::from(*clip_id);
+            let manual = false;
+            db::group::map_clip(&db, &gid, &clip_id, manual).unwrap();
+        });
+
+        let (total_count, clips) = select_by_group_id(
+            &db,
+            &gid,
+            &Pagination {
+                page_size: Some(2),
+                sort_by: ShowSortBy::ViewCount,
+                sort_direction_asc: true,
+                ..Default::default()
+            },
+        )?;
+        assert_eq!(total_count, 3);
+        assert_eq!(clips.len(), 2);
+        assert_eq!(clips[0].id, "FlirtyTenuousCasetteHoneyBadger");
+        assert_eq!(clips[1].id, "MoistUnsightlyBatteryTwitchRPG");
 
         Ok(())
     }

@@ -1,3 +1,4 @@
+use anyhow::anyhow;
 use chrono::Utc;
 use rand::Rng;
 use std::{sync::Arc, time::Duration};
@@ -5,6 +6,7 @@ use tokio::{
     sync::mpsc::{self, error::TryRecvError, Sender, UnboundedSender},
     time::{sleep, sleep_until, Instant},
 };
+use tokio_cron_scheduler::{Job, JobScheduler};
 use twitch::twitch_api2::types::Timestamp;
 
 use crate::prelude::*;
@@ -41,6 +43,57 @@ struct QueueElement {
     fetch_clips: Sender<QueueElement>,
 }
 
+pub async fn schedule(
+    scheduler: &mut JobScheduler,
+    db: DbLock,
+    tc: Arc<twitch::Client>,
+) -> AnyResult<uuid::Uuid> {
+    let (fetch_new_game_clips_cron, recorded_at_least_ago) = {
+        let db = db.lock().await;
+        let new_clips_cron = db::setting::fetch_new_game_clips_cron(&db)?;
+        let at_least_ago = db::setting::recorded_at_least_hours_ago(&db)?;
+
+        (new_clips_cron, Some(chrono::Duration::hours(at_least_ago)))
+    };
+
+    let fetch_new_game_clips = scheduler
+        .add(Job::new_async(
+            fetch_new_game_clips_cron.as_ref(),
+            move |_, _| {
+                debug!("Triggering fetch_new_game_clips");
+
+                let db = Arc::clone(&db);
+                let tc = Arc::clone(&tc);
+
+                Box::pin(async move {
+                    let res = once_for_all(
+                        Arc::clone(&db),
+                        Arc::clone(&tc),
+                        Conf {
+                            recorded_at_most_ago: None, // last clip
+                            recorded_at_least_ago,
+                        },
+                    )
+                    .await;
+                    if let Err(e) = res {
+                        error!("Cannot trigger fetch_new_game_clips: {e}");
+                    }
+                })
+            },
+        )?)
+        .await?;
+
+    let next_tick = scheduler
+        .next_tick_for_job(fetch_new_game_clips)
+        .await?
+        .ok_or_else(|| {
+            anyhow!("Cannot find next tick for fetch_new_game_clips")
+        })?;
+    info!("Next tick for fetch_new_game_clips: {next_tick}");
+
+    Ok(fetch_new_game_clips)
+}
+
 pub async fn once(
     db: DbLock,
     tc: Arc<twitch::Client>,
@@ -55,7 +108,7 @@ pub async fn once(
     once_(db, tc, conf, vec![(game_id, recorded_at)]).await
 }
 
-pub async fn once_for_all(
+async fn once_for_all(
     db: DbLock,
     tc: Arc<twitch::Client>,
     conf: Conf,

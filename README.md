@@ -35,8 +35,18 @@ Simple no-css handlebar templates.
 
 # To do
 
-- label data with whisper and gpt
-- given context and clip, cluster clip with respect to context
+- worker can download clip mp4s from twitch
+- worker can run a clip through whisper
+  - whisper can be run as a container dependency of worker
+- groups
+  - clips are manually selected
+  - a group can be set to auto downloaded and to be processed
+  - when viewing a game clip show groups it belongs to
+  - allow adding game clip to a new group
+- label data with gpt
+  - given context and clip, cluster clip with respect to context
   - the transcribed text is then vectorized
   - search on vectors and select the top N clips
-- given context and clip, return a fragment that can be used in the final edit
+- backup db
+- select multiple broadcasters at once in clips view
+- no need for a separate twitch crate

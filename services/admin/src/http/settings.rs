@@ -12,7 +12,6 @@ pub async fn show(State(s): State<g::HttpState>) -> Result<Html<String>> {
 }
 
 #[derive(Deserialize)]
-#[serde(rename_all = "kebab-case")]
 pub struct EditSettings {
     fetch_new_game_clips_cron: Option<String>,
     recorded_at_least_hours_ago: Option<i64>,

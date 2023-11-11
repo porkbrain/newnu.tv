@@ -1,4 +1,4 @@
-use anyhow::anyhow;
+use anyhow::{anyhow, Context};
 
 use crate::prelude::*;
 
@@ -26,13 +26,22 @@ pub fn recorded_at_least_hours_ago(db: &DbConn) -> Result<i64> {
         })?)
 }
 
+pub fn map_clips_to_groups_cron(db: &DbConn) -> Result<String> {
+    fetch(db, "map_clips_to_groups_cron")
+}
+
+pub fn default_page_size(db: &DbConn) -> Result<usize> {
+    Ok(fetch(db, "default_page_size")?
+        .parse()
+        .map_err(|e| anyhow!("Cannot parse default_page_size as usize: {e}"))?)
+}
+
 fn fetch(db: &DbConn, name: &str) -> Result<String> {
     let mut stmt =
         db.prepare("SELECT value FROM settings WHERE name = :name")?;
     let value = stmt
-        .query_row(rusqlite::named_params! { ":name": name }, |row| {
-            row.get(0)
-        })?;
+        .query_row(rusqlite::named_params! { ":name": name }, |row| row.get(0))
+        .with_context(|| format!("Setting {name}"))?;
 
     Ok(value)
 }
@@ -48,6 +57,8 @@ mod tests {
 
         assert!(!fetch_new_game_clips_cron(&db).unwrap().is_empty());
         assert!(recorded_at_least_hours_ago(&db).is_ok());
+        assert!(map_clips_to_groups_cron(&db).is_ok());
+        assert!(default_page_size(&db).is_ok());
 
         Ok(())
     }

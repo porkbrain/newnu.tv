@@ -2,8 +2,10 @@
 mod clips;
 /// endpoints which ease development
 mod dev;
-/// endpoints for game management
+/// endpoints for twitch category management
 mod game;
+/// endpoints for group (of clips) management
+mod group;
 /// homepage
 mod home;
 /// endpoints for global settings
@@ -49,17 +51,23 @@ fn routes() -> Router<g::HttpState> {
     // i'll take the latter any day of the week
     let app = Router::new()
         .route("/", get(home::page))
-        .route("/search/game", get(game::search))
-        .route("/game/:game_id", get(game::show))
-        .route("/game/:game_id/post", post(game::add))
-        .route("/game/:game_id/delete", post(game::delete))
-        .route("/game/:game_id/pause/post", post(game::pause))
-        .route("/game/:game_id/pause/delete", post(game::resume))
-        .route("/game/:game_id/clips", get(clips::show))
+        .route("/search/games", get(game::search))
+        .route("/games/:game_id", get(game::show))
+        .route("/games/:game_id/post", post(game::add))
+        .route("/games/:game_id/delete", post(game::delete))
+        .route("/games/:game_id/pause/post", post(game::pause))
+        .route("/games/:game_id/pause/delete", post(game::resume))
+        .route("/games/:game_id/clips", get(clips::show))
         .route(
-            "/game/:game_id/clips/fetch/post",
+            "/games/:game_id/clips/groups/post",
+            post(group::from_clips_query),
+        )
+        .route(
+            "/games/:game_id/clips/fetch/post",
             post(clips::trigger_fetch),
         )
+        .route("/groups/post", post(group::create))
+        .route("/groups/:group_id", get(group::show))
         .route("/settings", get(settings::show))
         .route("/settings/put", post(settings::edit))
         .route("/dev/reset/post", post(dev::reset))
