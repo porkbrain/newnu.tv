@@ -30,6 +30,10 @@ pub fn map_clips_to_groups_cron(db: &DbConn) -> Result<String> {
     fetch(db, "map_clips_to_groups_cron")
 }
 
+pub fn download_clips_cron(db: &DbConn) -> Result<String> {
+    fetch(db, "download_clips_cron")
+}
+
 pub fn default_page_size(db: &DbConn) -> Result<usize> {
     Ok(fetch(db, "default_page_size")?
         .parse()

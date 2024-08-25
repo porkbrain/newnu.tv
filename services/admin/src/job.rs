@@ -1,3 +1,4 @@
+pub mod download_clips;
 pub mod fetch_new_game_clips;
 pub mod map_clips_to_groups;
 
@@ -11,6 +12,7 @@ pub struct Jobs {
     pub scheduler: JobScheduler,
     pub fetch_new_game_clips: uuid::Uuid,
     pub map_clips_to_groups: uuid::Uuid,
+    pub download_clips: uuid::Uuid,
 }
 
 pub async fn schedule_all(
@@ -29,6 +31,9 @@ pub async fn schedule_all(
     let map_clips_to_groups_job =
         map_clips_to_groups::schedule(&mut scheduler, Arc::clone(&db)).await?;
 
+    let download_clips_job =
+        download_clips::schedule(&mut scheduler, Arc::clone(&db)).await?;
+
     let shed = scheduler.clone();
     tokio::spawn(async move {
         if let Err(e) = shed.start().await {
@@ -40,5 +45,6 @@ pub async fn schedule_all(
         scheduler,
         fetch_new_game_clips: fetch_new_game_clips_job,
         map_clips_to_groups: map_clips_to_groups_job,
+        download_clips: download_clips_job,
     })
 }

@@ -45,5 +45,6 @@ fn migrations() -> Migrations<'static> {
             .down(include_str!("../migrations/0003.down.sql")),
         M::up(include_str!("../migrations/0004.up.sql"))
             .down(include_str!("../migrations/0004.down.sql")),
+        M::up(include_str!("../migrations/0005.up.sql")),
     ])
 }

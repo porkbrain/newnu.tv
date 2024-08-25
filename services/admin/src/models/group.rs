@@ -5,7 +5,12 @@ pub struct Group {
     pub id: GroupId,
     pub name: String,
     pub color: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub metadata_json: Option<serde_json::Value>,
+    pub zindex: i64,
+    pub archived: bool,
+    pub download_enabled: bool,
+    pub created_at: chrono::DateTime<chrono::Utc>,
 }
 
 #[derive(Debug, Clone, Deserialize, Serialize, Copy)]

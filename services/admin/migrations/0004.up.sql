@@ -9,6 +9,8 @@ CREATE TABLE IF NOT EXISTS groups (
     metadata_json TEXT,
     -- will be used for ordering groups in the UI, higher is better
     zindex INTEGER NOT NULL DEFAULT 0,
+    -- archived groups don't get any actions performed against
+    archived BOOLEAN NOT NULL DEFAULT false,
     -- when was the group created
     created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%SZ', 'now'))
 );

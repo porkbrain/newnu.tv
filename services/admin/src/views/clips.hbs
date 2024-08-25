@@ -138,7 +138,7 @@ Available query parameters:
                 <img
                     src="{{thumbnail_url}}"
                     alt="{{title}}"
-                    title="{{title}}"
+                    title="{{title}} ({{ recorded_at }})"
                 >
             </a>
             <small>
@@ -185,6 +185,7 @@ Available query parameters:
 
     function changePage(pageOffset) {
         const newOffset = Math.max(
+            {{!-- TODO: wrong name, if page offset is sent to APIs then this should be calculated there --}}
             {{query.page_offset}} + pageOffset * {{query.page_size}}, 0
         );
         params.set('page_offset', newOffset);

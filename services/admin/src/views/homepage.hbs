@@ -20,7 +20,25 @@
     <button>Search for matches</button>
 </form>
 
-{{!-- TODO: list and explain groups --}}
+<h2>Groups</h2>
+<ul>
+    {{#each groups as |group|}}
+        <li>
+            <a href="/groups/{{ group.id }}">{{ group.name }}</a>
+
+            {{!-- a coloured cube --}}
+            <div style="
+                    display: inline-block;
+                    width: 1em;
+                    height: 1em;
+                    background-color: {{ group.color }};
+                    margin-left: 0.5em;
+                    border: 2px solid black;"></div>
+        </li>
+    {{/each}}
+</ul>
+
+{{!-- TODO: explain groups --}}
 
 <h2 style="color: red">Danger zone</h2>
 <p>

@@ -45,9 +45,62 @@ pub fn update_metadata_json(
     Ok(())
 }
 
+pub fn select_all(db: &DbConn) -> Result<Vec<Group>> {
+    let mut stmt = db.prepare_cached(
+        "SELECT
+            id,
+            name,
+            color,
+            metadata_json,
+            zindex,
+            archived,
+            download_enabled,
+            created_at
+        FROM groups
+        WHERE archived = false
+        ORDER BY zindex DESC, name ASC;",
+    )?;
+    let groups = stmt
+        .query_map((), |row| Group::try_from(row))?
+        .map(|res| res.map_err(AppError::from))
+        .collect::<Result<_>>()?;
+    Ok(groups)
+}
+
+pub fn select_all_with_metadata(db: &DbConn) -> Result<Vec<Group>> {
+    let mut stmt = db.prepare_cached(
+        "SELECT
+            id,
+            name,
+            color,
+            metadata_json,
+            zindex,
+            archived,
+            download_enabled,
+            created_at
+        FROM groups
+        WHERE archived = false
+        AND metadata_json IS NOT NULL;",
+    )?;
+    let groups = stmt
+        .query_map([], |row| Group::try_from(row))?
+        .map(|row| row.map_err(AppError::from))
+        .try_collect()?;
+
+    Ok(groups)
+}
+
 pub fn select_by_name(db: &DbConn, name: &str) -> Result<Group> {
     let mut stmt = db.prepare_cached(
-        "SELECT id, name, color, metadata_json
+        "SELECT
+            id,
+            name,
+            color,
+            metadata_json,
+            zindex,
+            archived,
+            download_enabled,
+            created_at
         FROM groups WHERE name = :name;",
     )?;
     let group = stmt.query_row(named_params! { ":name": name }, |row| {
@@ -58,27 +111,21 @@ pub fn select_by_name(db: &DbConn, name: &str) -> Result<Group> {
 
 pub fn select_by_id(db: &DbConn, id: &GroupId) -> Result<Group> {
     let mut stmt = db.prepare_cached(
-        "SELECT id, name, color, metadata_json
+        "SELECT
+            id,
+            name,
+            color,
+            metadata_json,
+            zindex,
+            archived,
+            download_enabled,
+            created_at
         FROM groups WHERE id = :id;",
     )?;
     let group = stmt
         .query_row(named_params! { ":id": id }, |row| Group::try_from(row))
         .context("group::select_by_id")?;
     Ok(group)
-}
-
-pub fn select_all_with_metadata(db: &DbConn) -> Result<Vec<Group>> {
-    let mut stmt = db.prepare_cached(
-        "SELECT id, name, color, metadata_json
-        FROM groups
-        WHERE metadata_json IS NOT NULL;",
-    )?;
-    let groups = stmt
-        .query_map([], |row| Group::try_from(row))?
-        .map(|row| row.map_err(AppError::from))
-        .try_collect()?;
-
-    Ok(groups)
 }
 
 pub fn map_clip(
@@ -104,6 +151,37 @@ pub fn map_clip(
     Ok(())
 }
 
+pub fn archive(db: &DbConn, id: &GroupId) -> Result<()> {
+    db.execute(
+        "UPDATE groups
+        SET archived = true
+        WHERE id = :id;",
+        named_params! {
+            ":id": id,
+        },
+    )?;
+
+    Ok(())
+}
+
+pub fn set_auto_download(
+    db: &DbConn,
+    id: &GroupId,
+    enable: bool,
+) -> Result<()> {
+    db.execute(
+        "UPDATE groups
+        SET download_enabled = :enable
+        WHERE id = :id;",
+        named_params! {
+            ":id": id,
+            ":enable": enable,
+        },
+    )?;
+
+    Ok(())
+}
+
 impl TryFrom<&rusqlite::Row<'_>> for Group {
     type Error = rusqlite::Error;
 
@@ -113,6 +191,10 @@ impl TryFrom<&rusqlite::Row<'_>> for Group {
             name: row.get("name")?,
             color: row.get("color")?,
             metadata_json: row.get("metadata_json")?,
+            zindex: row.get("zindex")?,
+            archived: row.get("archived")?,
+            download_enabled: row.get("download_enabled")?,
+            created_at: row.get("created_at")?,
         })
     }
 }

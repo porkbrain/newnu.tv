@@ -10,13 +10,53 @@ Available query parameters:
 
 {{#*inline "page"}}
 <p>
-    <a href="/">Home</a> | Groups | <a href="/groups/{{group.id}}">{{group.name}}</a>
+    <a href="/">Home</a> | Groups | {{ group.name }}
 </p>
 <hr>
 
-{{!-- TODO: explain --}}
+<h2>
+    {{ group.name }}
+    {{!-- TODO: deduplicate with homepage --}}
+    <div style="
+                    display: inline-block;
+                    width: 1em;
+                    height: 1em;
+                    background-color: {{ group.color }};
+                    margin-left: 0.5em;
+                    border: 2px solid black;"></div>
+</h2>
+
+{{#if group.metadata_json}}
+    <pre>{{ stringify group.metadata_json }}</pre>
+{{/if}}
+
+<p>
+    Useful actions can be performed in bulk on clips in a group.
+    Clips can be grouped either manually by selecting them in the clip browser
+    or automatically by some filter criteria selected also in the clip browser.
+</p>
+
+<p>
+    Clip mp4s belonging to this group are
+    {{#if group.download_enabled}}
+        <b>not</b> automatically downloaded.
+        Enable downloads <a href="/groups/{{ group.id }}/download/auto/post">here</a>.
+    {{else}}
+        being <b>automatically</b> downloaded.
+        Disable downloads <a href="/groups/{{ group.id }}/download/auto/delete">here</a>.
+    {{/if}}
+
+    Trigger immediate one time download
+    <a href="/groups/{{ group.id }}/download/post">here</a>.
+</p>
+
+<p>
+    <a href="/groups/{{ group.id }}/archive/post">Archive</a> this group.
+    An archived group will be hidden and no more automatic actions will be
+    performed against it.
+</p>
+
 {{!-- TODO: enabled automatic download --}}
-{{!-- TODO: delete --}}
 
 <h2>Browse clips</h2>
 

@@ -22,6 +22,14 @@ pub struct Clip {
     pub updated_at: chrono::DateTime<chrono::Utc>,
     pub url: String,
     pub view_count: usize,
+    /// Whether the worker has downloaded the clip.
+    /// Useful to know for example for exports - if not all clips are
+    /// downloaded, then the export will take longer.
+    ///
+    /// Also, we don't instruct the worker to download clips that are already
+    /// downloaded.
+    /// We prefer to store state in admin.
+    pub is_downloaded: bool,
 }
 
 #[derive(Deserialize, Serialize, Debug, Default)]
@@ -83,6 +91,9 @@ pub struct Filter {
     #[serde(skip_serializing_if = "Option::is_none")]
     #[serde(deserialize_with = "g::empty_string_is_none")]
     pub max_recorded_at: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(deserialize_with = "g::empty_string_is_none")]
+    pub is_downloaded: Option<bool>,
 }
 
 #[derive(Deserialize, Serialize, Debug, Clone, Copy, Default)]
@@ -91,6 +102,23 @@ pub enum ShowSortBy {
     RecordedAt,
     #[default]
     ViewCount,
+}
+
+impl Pagination {
+    pub fn page_size_or_default(&self, db: &DbConn) -> Result<usize> {
+        match self.page_size {
+            Some(0) | None => Ok(db::setting::default_page_size(db)?),
+            Some(ps) => Ok(ps),
+        }
+    }
+
+    pub fn default_page_size_if_none(&mut self, db: &DbConn) -> Result<()> {
+        if matches!(self.page_size, Some(0) | None) {
+            self.page_size = Some(db::setting::default_page_size(db)?)
+        }
+
+        Ok(())
+    }
 }
 
 impl From<ShowSortBy> for &'static str {

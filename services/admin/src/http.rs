@@ -68,6 +68,19 @@ fn routes() -> Router<g::HttpState> {
         )
         .route("/groups/post", post(group::create))
         .route("/groups/:group_id", get(group::show))
+        .route("/groups/:group_id/archive/post", post(group::archive))
+        .route(
+            "/groups/:group_id/download/auto/post",
+            post(group::enable_download),
+        )
+        .route(
+            "/groups/:group_id/download/auto/delete",
+            post(group::disable_download),
+        )
+        .route(
+            "/groups/:group_id/download/post",
+            post(group::trigger_download),
+        )
         .route("/settings", get(settings::show))
         .route("/settings/put", post(settings::edit))
         .route("/dev/reset/post", post(dev::reset))

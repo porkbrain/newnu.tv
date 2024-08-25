@@ -1,10 +1,10 @@
 use anyhow::Context;
 use itertools::Itertools;
-use rusqlite::named_params;
+use rusqlite::{named_params, ToSql};
 use std::{rc::Rc, time::Duration};
 use twitch::models::GameId;
 
-use crate::models::clip::{Clip, Filter, Pagination, ShowParams};
+use crate::models::clip::{Clip, Filter, ShowParams};
 use crate::prelude::*;
 
 pub fn list(
@@ -12,68 +12,27 @@ pub fn list(
     game_id: &GameId,
     ShowParams { pagination, filter }: &ShowParams,
 ) -> Result<(usize, Vec<Clip>)> {
-    let Filter {
-        broadcaster_name,
-        langs,
-        max_recorded_at,
-        min_recorded_at,
-        title_like,
-        view_count_max,
-        view_count_min,
-    } = filter;
-    let Pagination {
-        page_offset,
-        page_size,
-        sort_by,
-        sort_direction_asc,
-    } = pagination;
+    let sql_filter = sql_filter();
 
-    let page_size = match page_size {
-        Some(0) => {
-            return Err(AppError::bad_request(
-                "page_size must be greater than 0".to_string(),
-            ));
-        }
-        Some(page_size) => *page_size,
-        None => db::setting::default_page_size(&db)?,
+    let total_count_sql =
+        format!("SELECT COUNT(*) FROM clips WHERE {sql_filter}");
+    let mut params = Params::new(filter);
+    let total_count: i64 = {
+        let mut p = params.as_named();
+        p.push((":game_id", game_id));
+        db.prepare(&total_count_sql)?
+            .query_row(p.as_slice(), |row| row.get(0))
+            .context("clip::list total count")?
     };
 
-    let sort_by: &str = From::from(*sort_by);
-    let sort_direction = if *sort_direction_asc { "ASC" } else { "DESC" };
-    // array feature of sqlite
-    let langs = Rc::new(
-        langs
-            .iter()
-            .cloned()
-            .map(rusqlite::types::Value::from)
-            .collect_vec(),
-    );
-    let where_clause = "WHERE
-        game_id = :game_id
-        AND (:broadcaster_name IS NULL OR broadcaster_name = :broadcaster_name)
-        AND (:title_like IS NULL OR title LIKE '%' || :title_like || '%')
-        AND (:skip_langs OR lang IN rarray(:langs))
-        AND (:view_count_max IS NULL OR view_count <= :view_count_max)
-        AND view_count >= :view_count_min
-        AND (:min_recorded_at IS NULL OR recorded_at >= :min_recorded_at)
-        AND (:max_recorded_at IS NULL OR recorded_at <= :max_recorded_at)";
-
-    let total_count_sql = format!("SELECT COUNT(*) FROM clips {where_clause}");
-    let params = named_params! {
-        ":broadcaster_name": broadcaster_name,
-        ":game_id": game_id,
-        ":langs": langs,
-        ":max_recorded_at": max_recorded_at,
-        ":min_recorded_at": min_recorded_at,
-        ":skip_langs": langs.is_empty(),
-        ":title_like": title_like,
-        ":view_count_max": view_count_max,
-        ":view_count_min": view_count_min,
+    let page_size = pagination.page_size_or_default(db)?;
+    params.add_pagination(page_size, pagination.page_offset);
+    let sort_by: &str = From::from(pagination.sort_by);
+    let sort_direction = if pagination.sort_direction_asc {
+        "ASC"
+    } else {
+        "DESC"
     };
-    let total_count: i64 = db
-        .prepare(&total_count_sql)?
-        .query_row(params, |row| row.get(0))
-        .context("Total clips")?;
 
     let paginated_sql = format!(
         "SELECT
@@ -90,33 +49,23 @@ pub fn list(
             title,
             updated_at,
             url,
-            view_count
+            view_count,
+            is_downloaded
         FROM clips
-        {where_clause}
+        WHERE {sql_filter}
         ORDER BY {sort_by} {sort_direction}
         LIMIT :page_size
-        OFFSET :page_offset"
+        OFFSET :page_offset",
     );
-    let params = named_params! {
-        ":broadcaster_name": broadcaster_name,
-        ":game_id": game_id,
-        ":langs": langs,
-        ":max_recorded_at": max_recorded_at,
-        ":min_recorded_at": min_recorded_at,
-        ":page_offset": page_offset,
-        ":page_size": page_size,
-        ":skip_langs": langs.is_empty(),
-        ":title_like": title_like,
-        ":view_count_max": view_count_max,
-        ":view_count_min": view_count_min,
+    let clips = {
+        let mut p = params.as_named();
+        p.push((":game_id", game_id));
+        db.prepare_cached(&paginated_sql)?
+            .query_map(p.as_slice(), |row| Clip::try_from(row))?
+            .map(|row| row.map_err(AppError::from))
+            .try_collect()
+            .context("clip::list paginated")?
     };
-
-    let clips = db
-        .prepare_cached(&paginated_sql)?
-        .query_map(params, |row| Clip::try_from(row))?
-        .map(|row| row.map_err(AppError::from))
-        .try_collect()
-        .context("List paginated clips")?;
 
     Ok((total_count as usize, clips))
 }
@@ -124,34 +73,28 @@ pub fn list(
 pub fn select_by_group_id(
     db: &DbConn,
     group_id: &models::group::GroupId,
-    query: &models::clip::Pagination,
+    ShowParams { pagination, filter }: &ShowParams,
 ) -> Result<(usize, Vec<Clip>)> {
-    let page_size = match query.page_size {
-        Some(0) => {
-            return Err(AppError::bad_request(
-                "page_size must be greater than 0".to_string(),
-            ));
-        }
-        Some(page_size) => page_size,
-        None => db::setting::default_page_size(&db)?,
-    };
+    let sql_filter = sql_filter();
 
-    let total_count: i64 = db
-        .prepare_cached(&format!(
+    let mut params = Params::new(filter);
+
+    let total_count: i64 = {
+        let mut p = params.as_named();
+        p.push((":group_id", group_id));
+        db.prepare_cached(&format!(
             "SELECT COUNT(*) FROM clips
             INNER JOIN group_clips ON group_clips.clip_id = clips.id
-            WHERE group_clips.group_id = :group_id"
+            WHERE {sql_filter} AND group_clips.group_id = :group_id"
         ))?
-        .query_row(
-            named_params! {
-                ":group_id": group_id,
-            },
-            |row| row.get(0),
-        )
-        .context("clip::select_by_group_id total_count")?;
+        .query_row(p.as_slice(), |row| row.get(0))
+        .context("clip::select_by_group_id total_count")?
+    };
 
-    let sort_by: &str = From::from(query.sort_by);
-    let sort_direction = if query.sort_direction_asc {
+    let page_size = pagination.page_size_or_default(db)?;
+    params.add_pagination(page_size, pagination.page_offset);
+    let sort_by: &str = From::from(pagination.sort_by);
+    let sort_direction = if pagination.sort_direction_asc {
         "ASC"
     } else {
         "DESC"
@@ -172,26 +115,23 @@ pub fn select_by_group_id(
             c.title AS title,
             c.updated_at AS updated_at,
             c.url AS url,
-            c.view_count AS view_count
+            c.view_count AS view_count,
+            c.is_downloaded AS is_downloaded
         FROM clips c
         INNER JOIN group_clips ON group_clips.clip_id = c.id
-        WHERE group_clips.group_id = :group_id
+        WHERE {sql_filter} AND group_clips.group_id = :group_id
         ORDER BY {sort_by} {sort_direction}
         LIMIT :page_size
         OFFSET :page_offset;",
     ))?;
-    let clips = stmt
-        .query_map(
-            named_params! {
-                ":group_id": group_id,
-                ":page_size": page_size,
-                ":page_offset": query.page_offset,
-            },
-            |row| Clip::try_from(row),
-        )?
-        .map(|res| res.map_err(AppError::from))
-        .try_collect()
-        .context("clip::select_by_group_id")?;
+    let clips = {
+        let mut p = params.as_named();
+        p.push((":group_id", group_id));
+        stmt.query_map(p.as_slice(), |row| Clip::try_from(row))?
+            .map(|res| res.map_err(AppError::from))
+            .try_collect()
+            .context("clip::select_by_group_id")?
+    };
 
     Ok((total_count as usize, clips))
 }
@@ -215,7 +155,75 @@ impl TryFrom<&rusqlite::Row<'_>> for Clip {
             updated_at: row.get("updated_at")?,
             url: row.get("url")?,
             view_count: row.get("view_count")?,
+            is_downloaded: row.get("is_downloaded")?,
         })
+    }
+}
+
+fn sql_filter() -> &'static str {
+    "
+        (:game_id IS NULL OR game_id = :game_id)
+        AND (:broadcaster_name IS NULL OR broadcaster_name = :broadcaster_name)
+        AND (:title_like IS NULL OR title LIKE '%' || :title_like || '%')
+        AND (:skip_langs OR lang IN rarray(:langs))
+        AND (:view_count_max IS NULL OR view_count <= :view_count_max)
+        AND view_count >= :view_count_min
+        AND (:min_recorded_at IS NULL OR recorded_at >= :min_recorded_at)
+        AND (:max_recorded_at IS NULL OR recorded_at <= :max_recorded_at)
+        AND (:is_downloaded IS NULL OR is_downloaded <= :is_downloaded)
+    "
+}
+
+struct Params<'a> {
+    filter: &'a Filter,
+    langs: Rc<Vec<rusqlite::types::Value>>,
+    skip_langs: bool,
+    page_size_and_offset: Option<(usize, usize)>,
+}
+
+impl<'a> Params<'a> {
+    fn new(filter: &'a Filter) -> Self {
+        let langs = Rc::new(
+            filter
+                .langs
+                .iter()
+                .cloned()
+                .map(rusqlite::types::Value::from)
+                .collect_vec(),
+        );
+
+        Self {
+            filter,
+            langs,
+            skip_langs: filter.langs.is_empty(),
+            page_size_and_offset: None,
+        }
+    }
+
+    fn add_pagination(&mut self, page_size: usize, page_offset: usize) {
+        self.page_size_and_offset = Some((page_size, page_offset));
+    }
+
+    fn as_named(&'a self) -> Vec<(&'static str, &'a dyn ToSql)> {
+        let mut p = named_params! {
+            ":broadcaster_name": self.filter.broadcaster_name,
+            ":title_like": self.filter.title_like,
+            ":langs": self.langs,
+            ":skip_langs": self.skip_langs,
+            ":view_count_max": self.filter.view_count_max,
+            ":view_count_min": self.filter.view_count_min,
+            ":min_recorded_at": self.filter.min_recorded_at,
+            ":max_recorded_at": self.filter.max_recorded_at,
+            ":is_downloaded": self.filter.is_downloaded,
+        }
+        .to_vec();
+
+        if let Some((size, offset)) = &self.page_size_and_offset {
+            p.push((":page_size", size));
+            p.push((":page_offset", offset));
+        }
+
+        p
     }
 }
 
@@ -224,7 +232,7 @@ mod tests {
     //! We have an SQL with some sample data in tests/assets/clips.sql.
     //! Load that data, insert it into in-memory sqlite.
 
-    use crate::models::clip::ShowSortBy;
+    use crate::models::clip::{Pagination, ShowSortBy};
 
     use super::*;
 
@@ -493,11 +501,14 @@ mod tests {
         let (total_count, clips) = select_by_group_id(
             &db,
             &gid,
-            &Pagination {
-                page_size: Some(2),
-                sort_by: ShowSortBy::ViewCount,
-                sort_direction_asc: true,
-                ..Default::default()
+            &ShowParams {
+                pagination: Pagination {
+                    page_size: Some(2),
+                    sort_by: ShowSortBy::ViewCount,
+                    sort_direction_asc: true,
+                    ..Default::default()
+                },
+                filter: Default::default(),
             },
         )?;
         assert_eq!(total_count, 3);

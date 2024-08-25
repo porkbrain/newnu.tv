@@ -1,13 +1,10 @@
 use crate::prelude::*;
-use axum::response::Html;
 use handlebars::Handlebars;
-use serde_json::json;
 use std::sync::Arc;
-use twitch::models::GameId;
 
 #[derive(Clone)]
 pub struct Views {
-    handlebars: Arc<Handlebars<'static>>,
+    pub handlebars: Arc<Handlebars<'static>>,
 }
 
 impl Views {
@@ -49,122 +46,6 @@ impl Views {
             handlebars: Arc::new(h),
         })
     }
-
-    /// Pull all necessary data to render homepage from db.
-    pub fn homepage(&self, db: &DbConn) -> Result<Html<String>> {
-        let games: Vec<_> = db::game::select_all(db)?;
-
-        self.handlebars
-            .render("homepage", &json!({ "parent": "base", "games": games }))
-            .map(Html)
-            .map_err(From::from)
-    }
-
-    pub fn search_game(
-        &self,
-        games: &[twitch::models::Game],
-    ) -> Result<Html<String>> {
-        self.handlebars
-            .render(
-                "search_game",
-                &json!({
-                    "parent": "base",
-                    "games": games
-                }),
-            )
-            .map(Html)
-            .map_err(From::from)
-    }
-
-    /// Pull all necessary data to render game info from db.
-    pub fn game(&self, db: &DbConn, game: &GameId) -> Result<Html<String>> {
-        let game = db::game::select_by_id(db, game)?;
-
-        self.handlebars
-            .render("game", &json!({ "parent": "base", "game": game }))
-            .map(Html)
-            .map_err(From::from)
-    }
-
-    /// View global settings.
-    pub fn settings(&self, db: &DbConn) -> Result<Html<String>> {
-        let fetch_new_game_clips_cron =
-            db::setting::fetch_new_game_clips_cron(db)?;
-        let recorded_at_least_hours_ago =
-            db::setting::recorded_at_least_hours_ago(db)?;
-        let map_clips_to_groups_cron =
-            db::setting::map_clips_to_groups_cron(db)?;
-        let default_page_size = db::setting::default_page_size(db)?;
-
-        self.handlebars
-            .render(
-                "settings",
-                &json!(
-                    {
-                        "parent": "base",
-                        "settings": {
-                            "fetch_new_game_clips_cron": fetch_new_game_clips_cron,
-                            "recorded_at_least_hours_ago": recorded_at_least_hours_ago,
-                            "map_clips_to_groups_cron": map_clips_to_groups_cron,
-                            "default_page_size": default_page_size,
-                        }
-                    }
-                ),
-            )
-            .map(Html)
-            .map_err(From::from)
-    }
-
-    pub fn clips(
-        &self,
-        db: &DbConn,
-        game_id: &GameId,
-        total_count: usize,
-        clips: &[models::clip::Clip],
-        query: &models::clip::ShowParams,
-    ) -> Result<Html<String>> {
-        trace!("Rendering clips for game {game_id}");
-
-        let game = db::game::select_by_id(db, game_id)?;
-
-        self.handlebars
-            .render(
-                "clips",
-                &json!({
-                    "parent": "base_xl",
-                    "game": game,
-                    "total_count": total_count,
-                    "query": query,
-                    "clips": clips,
-                }),
-            )
-            .map(Html)
-            .map_err(From::from)
-    }
-
-    pub fn group(
-        &self,
-        group: &models::group::Group,
-        total_count: usize,
-        clips: &[models::clip::Clip],
-        query: &models::clip::Pagination,
-    ) -> Result<Html<String>> {
-        trace!("Rendering clips for group {}", group.id);
-
-        self.handlebars
-            .render(
-                "group",
-                &json!({
-                    "parent": "base_xl",
-                    "group": group,
-                    "total_count": total_count,
-                    "clips": clips,
-                    "query": query,
-                }),
-            )
-            .map(Html)
-            .map_err(From::from)
-    }
 }
 
 mod helpers {
@@ -178,6 +59,7 @@ mod helpers {
         handlebars.register_helper("not", Box::new(not));
         handlebars.register_helper("contains", Box::new(contains));
         handlebars.register_helper("empty", Box::new(empty));
+        handlebars.register_helper("stringify", Box::new(stringify));
     }
 
     handlebars_helper!(div: |a: usize, b: usize| a / b);
@@ -200,4 +82,5 @@ mod helpers {
         Value::Null => true,
         _ => false,
     });
+    handlebars_helper!(stringify: |v: Value| serde_json::to_string_pretty(&v).unwrap());
 }

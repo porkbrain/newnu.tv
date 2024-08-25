@@ -4,9 +4,11 @@ use axum::{
     Form,
 };
 use serde::Deserialize;
+use serde_json::json;
 use std::sync::Arc;
+use twitch::models::GameId;
 
-use crate::prelude::*;
+use crate::{prelude::*, views::Views};
 
 #[derive(Deserialize, Debug)]
 pub struct TriggerFetchClipsJob {
@@ -57,6 +59,35 @@ pub async fn trigger_fetch(
     Ok(Redirect::to(&format!("/games/{game_id}")))
 }
 
+impl Views {
+    pub fn clips(
+        &self,
+        db: &DbConn,
+        game_id: &GameId,
+        total_count: usize,
+        clips: &[models::clip::Clip],
+        query: &models::clip::ShowParams,
+    ) -> Result<Html<String>> {
+        trace!("Rendering clips for game {game_id}");
+
+        let game = db::game::select_by_id(db, game_id)?;
+
+        self.handlebars
+            .render(
+                "clips",
+                &json!({
+                    "parent": "base_xl",
+                    "game": game,
+                    "total_count": total_count,
+                    "query": query,
+                    "clips": clips,
+                }),
+            )
+            .map(Html)
+            .map_err(From::from)
+    }
+}
+
 pub async fn show(
     State(s): State<g::HttpState>,
     Path(game_id): Path<twitch::models::GameId>,
@@ -64,9 +95,7 @@ pub async fn show(
 ) -> Result<Html<String>> {
     let db = s.db.lock().await;
 
-    if query.pagination.page_size.is_none() {
-        query.pagination.page_size = Some(db::setting::default_page_size(&db)?);
-    }
+    query.pagination.default_page_size_if_none(&db)?;
 
     trace!("Listing clips for game {game_id}");
     let (total_count, clips) = db::clip::list(&db, &game_id, &query)?;
