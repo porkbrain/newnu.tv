@@ -57,30 +57,27 @@ pub async fn schedule(
     };
 
     let fetch_new_game_clips = scheduler
-        .add(Job::new_async(
-            fetch_new_game_clips_cron.as_ref(),
-            move |_, _| {
-                debug!("Triggering fetch_new_game_clips");
+        .add(Job::new_async(fetch_new_game_clips_cron, move |_, _| {
+            debug!("Triggering fetch_new_game_clips");
 
-                let db = Arc::clone(&db);
-                let tc = Arc::clone(&tc);
+            let db = Arc::clone(&db);
+            let tc = Arc::clone(&tc);
 
-                Box::pin(async move {
-                    let res = once_for_all(
-                        Arc::clone(&db),
-                        Arc::clone(&tc),
-                        Conf {
-                            recorded_at_most_ago: None, // last clip
-                            recorded_at_least_ago,
-                        },
-                    )
-                    .await;
-                    if let Err(e) = res {
-                        error!("Cannot trigger fetch_new_game_clips: {e}");
-                    }
-                })
-            },
-        )?)
+            Box::pin(async move {
+                let res = once_for_all(
+                    Arc::clone(&db),
+                    Arc::clone(&tc),
+                    Conf {
+                        recorded_at_most_ago: None, // last clip
+                        recorded_at_least_ago,
+                    },
+                )
+                .await;
+                if let Err(e) = res {
+                    error!("Cannot trigger fetch_new_game_clips: {e}");
+                }
+            })
+        })?)
         .await?;
 
     let next_tick = scheduler

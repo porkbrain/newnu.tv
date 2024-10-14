@@ -23,21 +23,18 @@ pub async fn schedule(
     };
 
     let download_clips = scheduler
-        .add(Job::new_async(
-            download_clips_cron.as_ref(),
-            move |_, _| {
-                debug!("Triggering download_clips");
+        .add(Job::new_async(download_clips_cron, move |_, _| {
+            debug!("Triggering download_clips");
 
-                let db = Arc::clone(&db);
+            let db = Arc::clone(&db);
 
-                Box::pin(async move {
-                    let res = once_for_all(Arc::clone(&db)).await;
-                    if let Err(e) = res {
-                        error!("Cannot trigger download_clips: {e}");
-                    }
-                })
-            },
-        )?)
+            Box::pin(async move {
+                let res = once_for_all(Arc::clone(&db)).await;
+                if let Err(e) = res {
+                    error!("Cannot trigger download_clips: {e}");
+                }
+            })
+        })?)
         .await?;
 
     let next_tick = scheduler

@@ -23,21 +23,18 @@ pub async fn schedule(
     };
 
     let map_clips_to_groups = scheduler
-        .add(Job::new_async(
-            map_clips_to_groups_cron.as_ref(),
-            move |_, _| {
-                debug!("Triggering map_clips_to_groups");
+        .add(Job::new_async(map_clips_to_groups_cron, move |_, _| {
+            debug!("Triggering map_clips_to_groups");
 
-                let db = Arc::clone(&db);
+            let db = Arc::clone(&db);
 
-                Box::pin(async move {
-                    let res = once_for_all(Arc::clone(&db)).await;
-                    if let Err(e) = res {
-                        error!("Cannot trigger map_clips_to_groups: {e}");
-                    }
-                })
-            },
-        )?)
+            Box::pin(async move {
+                let res = once_for_all(Arc::clone(&db)).await;
+                if let Err(e) = res {
+                    error!("Cannot trigger map_clips_to_groups: {e}");
+                }
+            })
+        })?)
         .await?;
 
     let next_tick = scheduler
