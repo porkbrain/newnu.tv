@@ -15,6 +15,8 @@ which can be uploaded to YouTube.
 apt install protobuf-compiler libprotobuf-dev
 ```
 
+Alternatively, you can install it from [source][grpc-protoc-install] as some package managers have quite dated versions.
+
 ## Database
 
 Sqlite connection behind a mutex.
@@ -26,8 +28,9 @@ This allows reasonable concurrency in exchange for simple management.
 
 ## Http routes
 
-We typically run first RPC and then insert to the database.
+In the admin, we typically run first the RPC call and then insert to the database.
 It's more likely that RPC fails than the database op.
+This is a naive approach but works for now.
 
 ## Views
 
@@ -50,3 +53,7 @@ Simple no-css handlebar templates.
 - backup db
 - select multiple broadcasters at once in clips view
 - no need for a separate twitch crate
+
+<!-- List of Links -->
+
+[grpc-protoc-install]: https://grpc.io/docs/protoc-installation/#install-pre-compiled-binaries-any-os
