@@ -28,5 +28,7 @@ CREATE TABLE IF NOT EXISTS clips (
     -- not a foreign key, but can be joined with games table using this
     game_id TEXT NOT NULL,
     -- when was the clip created in the database
-    created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%SZ', 'now'))
+    created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%SZ', 'now')),
+    -- when was the clip last updated
+    updated_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%SZ', 'now'))
 );

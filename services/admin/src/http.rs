@@ -13,11 +13,11 @@ mod settings;
 
 use crate::prelude::*;
 use axum::{
+    http::StatusCode,
     response::IntoResponse,
     routing::{get, post},
     Router,
 };
-use hyper::StatusCode;
 use serde_json::json;
 use std::net::SocketAddr;
 

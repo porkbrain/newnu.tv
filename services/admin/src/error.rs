@@ -1,6 +1,6 @@
 use crate::prelude::*;
+use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
-use hyper::StatusCode;
 use serde::Serialize;
 use serde_json::json;
 use std::borrow::Cow;

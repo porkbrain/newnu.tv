@@ -6,7 +6,7 @@ edition.workspace = true
 [dependencies]
 anyhow.workspace = true
 log.workspace = true
-reqwest = "*"                                    # whichever version twitch api supports
+reqwest = "0.11.4"                               # must match the version in twitch_api2
 serde.workspace = true
 rusqlite = { optional = true, workspace = true }
 
