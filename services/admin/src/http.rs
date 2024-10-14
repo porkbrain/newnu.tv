@@ -19,17 +19,15 @@ use axum::{
     Router,
 };
 use serde_json::json;
-use std::net::SocketAddr;
 
 pub async fn start(g: g::HttpState) -> AnyResult<()> {
-    let http_addr = g.conf.http_addr;
+    let socket_addr = g.conf.socket_addr;
 
     let routes = routes().with_state(g);
 
-    info!("http://{http_addr}");
-    axum::Server::bind(&http_addr)
-        .serve(routes.into_make_service_with_connect_info::<SocketAddr>())
-        .await?;
+    info!("http://{socket_addr}");
+    let listener = tokio::net::TcpListener::bind(socket_addr).await.unwrap();
+    axum::serve(listener, routes).await.unwrap();
 
     Ok(())
 }

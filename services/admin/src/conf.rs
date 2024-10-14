@@ -8,7 +8,7 @@ use std::{
 
 pub struct Conf {
     /// For example 0.0.0.0:8080
-    pub http_addr: SocketAddr,
+    pub socket_addr: SocketAddr,
     pub sqlite_db_path: PathBuf,
     pub worker_addr: SocketAddr,
     pub twitch_client_id: String,
@@ -19,8 +19,8 @@ impl Conf {
     pub fn from_env() -> AnyResult<Self> {
         info!("Loading config from environment");
 
-        let http_addr = env::var("HTTP_ADDR").context("HTTP_ADDR")?;
-        debug!("HTTP_ADDR: {http_addr}");
+        let socket_addr = env::var("SOCKET_ADDR").context("SOCKET_ADDR")?;
+        debug!("SOCKET_ADDR: {socket_addr}");
 
         let worker_addr = env::var("WORKER_ADDR").context("WORKER_ADDR")?;
         debug!("WORKER_ADDR: {worker_addr}");
@@ -46,7 +46,7 @@ impl Conf {
         );
 
         Ok(Self {
-            http_addr: http_addr.parse()?,
+            socket_addr: socket_addr.parse()?,
             worker_addr: worker_addr.parse()?,
             sqlite_db_path: sqlite_db_path.into(),
             twitch_client_id,
