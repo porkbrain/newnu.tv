@@ -11,13 +11,13 @@ use twitch::models::GameId;
 use crate::{prelude::*, views::Views};
 
 #[derive(Deserialize, Debug)]
-pub struct TriggerFetchClipsJob {
+pub(crate) struct TriggerFetchClipsJob {
     #[serde(deserialize_with = "g::empty_string_is_none")]
-    pub recorded_at_most_hours_ago: Option<usize>,
+    pub(crate) recorded_at_most_hours_ago: Option<usize>,
     #[serde(deserialize_with = "g::empty_string_is_none")]
-    pub recorded_at_least_hours_ago: Option<usize>,
+    pub(crate) recorded_at_least_hours_ago: Option<usize>,
 }
-pub async fn trigger_fetch(
+pub(crate) async fn trigger_fetch(
     State(s): State<g::HttpState>,
     Path(game_id): Path<twitch::models::GameId>,
     Form(TriggerFetchClipsJob {
@@ -60,7 +60,7 @@ pub async fn trigger_fetch(
 }
 
 impl Views {
-    pub fn clips(
+    pub(crate) fn clips(
         &self,
         db: &DbConn,
         game_id: &GameId,
@@ -88,7 +88,7 @@ impl Views {
     }
 }
 
-pub async fn show(
+pub(crate) async fn show(
     State(s): State<g::HttpState>,
     Path(game_id): Path<twitch::models::GameId>,
     Query(mut query): Query<models::clip::ShowParams>,

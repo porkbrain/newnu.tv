@@ -3,12 +3,12 @@ use handlebars::Handlebars;
 use std::sync::Arc;
 
 #[derive(Clone)]
-pub struct Views {
-    pub handlebars: Arc<Handlebars<'static>>,
+pub(crate) struct Views {
+    pub(crate) handlebars: Arc<Handlebars<'static>>,
 }
 
 impl Views {
-    pub fn new() -> AnyResult<Self> {
+    pub(crate) fn new() -> AnyResult<Self> {
         let mut h = Handlebars::new();
         h.set_strict_mode(false);
 
@@ -52,7 +52,7 @@ mod helpers {
     use handlebars::{handlebars_helper, Handlebars};
     use serde_json::Value;
 
-    pub fn register_all(handlebars: &mut Handlebars<'_>) {
+    pub(crate) fn register_all(handlebars: &mut Handlebars<'_>) {
         handlebars.register_helper("div", Box::new(div));
         handlebars.register_helper("add", Box::new(add));
         handlebars.register_helper("equals", Box::new(equals));

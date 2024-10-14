@@ -4,24 +4,24 @@ use std::time::Duration;
 use twitch::models::GameId;
 
 #[derive(Debug, Clone, Deserialize, Serialize, Eq, PartialEq)]
-pub struct ClipId(String);
+pub(crate) struct ClipId(String);
 
 #[derive(Debug, Serialize)]
-pub struct Clip {
-    pub broadcaster_id: String,
-    pub broadcaster_name: String,
-    pub created_at: chrono::DateTime<chrono::Utc>,
-    pub creator_name: String,
-    pub duration: Duration,
-    pub game_id: String,
-    pub id: ClipId,
-    pub lang: String,
-    pub recorded_at: chrono::DateTime<chrono::Utc>,
-    pub thumbnail_url: String,
-    pub title: String,
-    pub updated_at: chrono::DateTime<chrono::Utc>,
-    pub url: String,
-    pub view_count: usize,
+pub(crate) struct Clip {
+    pub(crate) broadcaster_id: String,
+    pub(crate) broadcaster_name: String,
+    pub(crate) created_at: chrono::DateTime<chrono::Utc>,
+    pub(crate) creator_name: String,
+    pub(crate) duration: Duration,
+    pub(crate) game_id: String,
+    pub(crate) id: ClipId,
+    pub(crate) lang: String,
+    pub(crate) recorded_at: chrono::DateTime<chrono::Utc>,
+    pub(crate) thumbnail_url: String,
+    pub(crate) title: String,
+    pub(crate) updated_at: chrono::DateTime<chrono::Utc>,
+    pub(crate) url: String,
+    pub(crate) view_count: usize,
     /// Whether the worker has downloaded the clip.
     /// Useful to know for example for exports - if not all clips are
     /// downloaded, then the export will take longer.
@@ -29,91 +29,94 @@ pub struct Clip {
     /// Also, we don't instruct the worker to download clips that are already
     /// downloaded.
     /// We prefer to store state in admin.
-    pub is_downloaded: bool,
+    pub(crate) is_downloaded: bool,
 }
 
 #[derive(Deserialize, Serialize, Debug, Default)]
-pub struct ShowParams {
+pub(crate) struct ShowParams {
     #[serde(flatten)]
-    pub pagination: Pagination,
+    pub(crate) pagination: Pagination,
     #[serde(flatten)]
-    pub filter: Filter,
+    pub(crate) filter: Filter,
 }
 
 #[derive(Deserialize, Serialize, Debug)]
-pub struct GroupParams {
-    pub game_id: GameId,
+pub(crate) struct GroupParams {
+    pub(crate) game_id: GameId,
     #[serde(flatten)]
-    pub filter: Filter,
+    pub(crate) filter: Filter,
 }
 
 #[derive(Deserialize, Serialize, Debug, Default)]
-pub struct Pagination {
+pub(crate) struct Pagination {
     #[serde(default)]
     #[serde(deserialize_with = "g::empty_string_is_none")]
-    pub page_size: Option<usize>,
+    pub(crate) page_size: Option<usize>,
     #[serde(default)]
     #[serde(deserialize_with = "g::string_is_usize")]
-    pub page_offset: usize,
+    pub(crate) page_offset: usize,
     #[serde(default)]
     #[serde(deserialize_with = "g::string_is_bool")]
-    pub sort_direction_asc: bool,
+    pub(crate) sort_direction_asc: bool,
     #[serde(default)]
-    pub sort_by: ShowSortBy,
+    pub(crate) sort_by: ShowSortBy,
 }
 
 #[derive(Deserialize, Serialize, Debug, Default)]
-pub struct Filter {
+pub(crate) struct Filter {
     #[serde(default)]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[serde(deserialize_with = "g::empty_string_is_none")]
-    pub broadcaster_name: Option<String>,
+    pub(crate) broadcaster_name: Option<String>,
     #[serde(default)]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[serde(deserialize_with = "g::empty_string_is_none")]
-    pub title_like: Option<String>,
+    pub(crate) title_like: Option<String>,
     #[serde(default)]
     #[serde(skip_serializing_if = "Vec::is_empty")]
     #[serde(deserialize_with = "g::csv_string_is_vec")]
-    pub langs: Vec<String>,
+    pub(crate) langs: Vec<String>,
     #[serde(default)]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[serde(deserialize_with = "g::string_is_option_usize")]
-    pub view_count_max: Option<usize>,
+    pub(crate) view_count_max: Option<usize>,
     #[serde(default)]
     #[serde(deserialize_with = "g::string_is_usize")]
-    pub view_count_min: usize,
+    pub(crate) view_count_min: usize,
     #[serde(default)]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[serde(deserialize_with = "g::empty_string_is_none")]
-    pub min_recorded_at: Option<String>,
+    pub(crate) min_recorded_at: Option<String>,
     #[serde(default)]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[serde(deserialize_with = "g::empty_string_is_none")]
-    pub max_recorded_at: Option<String>,
+    pub(crate) max_recorded_at: Option<String>,
     #[serde(default)]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[serde(deserialize_with = "g::empty_string_is_none")]
-    pub is_downloaded: Option<bool>,
+    pub(crate) is_downloaded: Option<bool>,
 }
 
 #[derive(Deserialize, Serialize, Debug, Clone, Copy, Default)]
 #[serde(rename_all = "snake_case")]
-pub enum ShowSortBy {
+pub(crate) enum ShowSortBy {
     RecordedAt,
     #[default]
     ViewCount,
 }
 
 impl Pagination {
-    pub fn page_size_or_default(&self, db: &DbConn) -> Result<usize> {
+    pub(crate) fn page_size_or_default(&self, db: &DbConn) -> Result<usize> {
         match self.page_size {
             Some(0) | None => Ok(db::setting::default_page_size(db)?),
             Some(ps) => Ok(ps),
         }
     }
 
-    pub fn default_page_size_if_none(&mut self, db: &DbConn) -> Result<()> {
+    pub(crate) fn default_page_size_if_none(
+        &mut self,
+        db: &DbConn,
+    ) -> Result<()> {
         if matches!(self.page_size, Some(0) | None) {
             self.page_size = Some(db::setting::default_page_size(db)?)
         }

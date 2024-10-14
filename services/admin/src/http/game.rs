@@ -9,7 +9,7 @@ use twitch::models::GameId;
 use crate::{prelude::*, views::Views};
 
 impl Views {
-    pub fn search_game(
+    pub(crate) fn search_game(
         &self,
         games: &[twitch::models::Game],
     ) -> Result<Html<String>> {
@@ -26,7 +26,7 @@ impl Views {
     }
 }
 
-pub async fn search(
+pub(crate) async fn search(
     State(s): State<g::HttpState>,
     Query(params): Query<HashMap<String, String>>,
 ) -> Result<Html<String>> {
@@ -41,7 +41,11 @@ pub async fn search(
 
 impl Views {
     /// Pull all necessary data to render game info from db.
-    pub fn game(&self, db: &DbConn, game: &GameId) -> Result<Html<String>> {
+    pub(crate) fn game(
+        &self,
+        db: &DbConn,
+        game: &GameId,
+    ) -> Result<Html<String>> {
         let game = db::game::select_by_id(db, game)?;
 
         self.handlebars
@@ -51,7 +55,7 @@ impl Views {
     }
 }
 
-pub async fn show(
+pub(crate) async fn show(
     State(s): State<g::HttpState>,
     Path(game_id): Path<GameId>,
 ) -> Result<Html<String>> {
@@ -59,7 +63,7 @@ pub async fn show(
     s.views.game(&db, &game_id)
 }
 
-pub async fn add(
+pub(crate) async fn add(
     State(s): State<g::HttpState>,
     Path(game_id): Path<GameId>,
 ) -> Result<Redirect> {
@@ -75,7 +79,7 @@ pub async fn add(
     Ok(Redirect::to(&format!("/games/{game_id}")))
 }
 
-pub async fn delete(
+pub(crate) async fn delete(
     State(s): State<g::HttpState>,
     Path(game_id): Path<GameId>,
 ) -> Result<Redirect> {
@@ -85,7 +89,7 @@ pub async fn delete(
     Ok(Redirect::to("/"))
 }
 
-pub async fn pause(
+pub(crate) async fn pause(
     State(s): State<g::HttpState>,
     Path(game_id): Path<GameId>,
 ) -> Result<Redirect> {
@@ -94,7 +98,7 @@ pub async fn pause(
     Ok(Redirect::to(&format!("/games/{game_id}")))
 }
 
-pub async fn resume(
+pub(crate) async fn resume(
     State(s): State<g::HttpState>,
     Path(game_id): Path<GameId>,
 ) -> Result<Redirect> {

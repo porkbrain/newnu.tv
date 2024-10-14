@@ -19,11 +19,11 @@ const HOW_LONG_UNTIL_CLIP_HAS_REASONABLE_VIEWS: Duration =
 const JOB_NAME: &str = "fetch_new_game_clips";
 
 #[derive(Debug, Default)]
-pub struct Conf {
+pub(crate) struct Conf {
     /// Only clips newer than this will be fetched.
-    pub recorded_at_most_ago: Option<chrono::Duration>,
+    pub(crate) recorded_at_most_ago: Option<chrono::Duration>,
     /// Only clips older than this will be fetched.
-    pub recorded_at_least_ago: Option<chrono::Duration>,
+    pub(crate) recorded_at_least_ago: Option<chrono::Duration>,
 }
 
 /// Like a breath-first search, we start with a seed where we have one element
@@ -45,7 +45,7 @@ struct QueueElement {
     fetch_clips: Sender<QueueElement>,
 }
 
-pub async fn schedule(
+pub(crate) async fn schedule(
     scheduler: &mut JobScheduler,
     db: DbLock,
     tc: Arc<twitch::Client>,
@@ -93,7 +93,7 @@ pub async fn schedule(
     Ok(fetch_new_game_clips)
 }
 
-pub async fn once(
+pub(crate) async fn once(
     db: DbLock,
     tc: Arc<twitch::Client>,
     conf: Conf,

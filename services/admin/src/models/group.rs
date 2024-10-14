@@ -1,20 +1,20 @@
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Serialize, Deserialize)]
-pub struct Group {
-    pub id: GroupId,
-    pub name: String,
-    pub color: String,
+pub(crate) struct Group {
+    pub(crate) id: GroupId,
+    pub(crate) name: String,
+    pub(crate) color: String,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub metadata_json: Option<serde_json::Value>,
-    pub zindex: i64,
-    pub archived: bool,
-    pub download_enabled: bool,
-    pub created_at: chrono::DateTime<chrono::Utc>,
+    pub(crate) metadata_json: Option<serde_json::Value>,
+    pub(crate) zindex: i64,
+    pub(crate) archived: bool,
+    pub(crate) download_enabled: bool,
+    pub(crate) created_at: chrono::DateTime<chrono::Utc>,
 }
 
 #[derive(Debug, Clone, Deserialize, Serialize, Copy)]
-pub struct GroupId(usize);
+pub(crate) struct GroupId(usize);
 
 impl std::fmt::Display for GroupId {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {

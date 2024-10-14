@@ -4,7 +4,7 @@ use rusqlite::{named_params, ErrorCode};
 
 use crate::{models::group::Group, prelude::*};
 
-pub fn insert(db: &DbConn, name: &str, color: &str) -> Result<GroupId> {
+pub(crate) fn insert(db: &DbConn, name: &str, color: &str) -> Result<GroupId> {
     let res = db.execute(
         "INSERT INTO
             groups (name, color)
@@ -27,7 +27,7 @@ pub fn insert(db: &DbConn, name: &str, color: &str) -> Result<GroupId> {
     }
 }
 
-pub fn update_metadata_json(
+pub(crate) fn update_metadata_json(
     db: &DbConn,
     id: &GroupId,
     metadata_json: serde_json::Value,
@@ -45,7 +45,7 @@ pub fn update_metadata_json(
     Ok(())
 }
 
-pub fn select_all(db: &DbConn) -> Result<Vec<Group>> {
+pub(crate) fn select_all(db: &DbConn) -> Result<Vec<Group>> {
     let mut stmt = db.prepare_cached(
         "SELECT
             id,
@@ -67,7 +67,7 @@ pub fn select_all(db: &DbConn) -> Result<Vec<Group>> {
     Ok(groups)
 }
 
-pub fn select_all_with_metadata(db: &DbConn) -> Result<Vec<Group>> {
+pub(crate) fn select_all_with_metadata(db: &DbConn) -> Result<Vec<Group>> {
     let mut stmt = db.prepare_cached(
         "SELECT
             id,
@@ -90,7 +90,7 @@ pub fn select_all_with_metadata(db: &DbConn) -> Result<Vec<Group>> {
     Ok(groups)
 }
 
-pub fn select_by_name(db: &DbConn, name: &str) -> Result<Group> {
+pub(crate) fn select_by_name(db: &DbConn, name: &str) -> Result<Group> {
     let mut stmt = db.prepare_cached(
         "SELECT
             id,
@@ -109,7 +109,7 @@ pub fn select_by_name(db: &DbConn, name: &str) -> Result<Group> {
     Ok(group)
 }
 
-pub fn select_by_id(db: &DbConn, id: &GroupId) -> Result<Group> {
+pub(crate) fn select_by_id(db: &DbConn, id: &GroupId) -> Result<Group> {
     let mut stmt = db.prepare_cached(
         "SELECT
             id,
@@ -128,7 +128,7 @@ pub fn select_by_id(db: &DbConn, id: &GroupId) -> Result<Group> {
     Ok(group)
 }
 
-pub fn map_clip(
+pub(crate) fn map_clip(
     db: &DbConn,
     group_id: &GroupId,
     clip_id: &ClipId,
@@ -151,7 +151,7 @@ pub fn map_clip(
     Ok(())
 }
 
-pub fn archive(db: &DbConn, id: &GroupId) -> Result<()> {
+pub(crate) fn archive(db: &DbConn, id: &GroupId) -> Result<()> {
     db.execute(
         "UPDATE groups
         SET archived = true
@@ -164,7 +164,7 @@ pub fn archive(db: &DbConn, id: &GroupId) -> Result<()> {
     Ok(())
 }
 
-pub fn set_auto_download(
+pub(crate) fn set_auto_download(
     db: &DbConn,
     id: &GroupId,
     enable: bool,

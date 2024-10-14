@@ -20,7 +20,7 @@ use axum::{
 };
 use serde_json::json;
 
-pub async fn start(g: g::HttpState) -> AnyResult<()> {
+pub(crate) async fn start(g: g::HttpState) -> AnyResult<()> {
     let socket_addr = g.conf.socket_addr;
 
     let routes = routes().with_state(g);

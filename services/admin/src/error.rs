@@ -7,14 +7,14 @@ use std::borrow::Cow;
 use std::error::Error as StdError;
 
 #[derive(Debug)]
-pub struct AppError {
-    pub message: Cow<'static, str>,
-    pub kind: AppErrorKind,
-    pub status: StatusCode,
+pub(crate) struct AppError {
+    pub(crate) message: Cow<'static, str>,
+    pub(crate) kind: AppErrorKind,
+    pub(crate) status: StatusCode,
 }
 
 #[derive(Default, Debug, Serialize)]
-pub enum AppErrorKind {
+pub(crate) enum AppErrorKind {
     /// Something wrong with the user request, see message for more info.
     BadRequest,
     AlreadyExists,
@@ -28,7 +28,7 @@ pub enum AppErrorKind {
 }
 
 impl AppError {
-    pub fn bad_request(message: impl Into<String>) -> Self {
+    pub(crate) fn bad_request(message: impl Into<String>) -> Self {
         Self {
             message: message.into().into(),
             kind: AppErrorKind::BadRequest,
@@ -36,7 +36,7 @@ impl AppError {
         }
     }
 
-    pub fn internal(message: impl Into<String>) -> Self {
+    pub(crate) fn internal(message: impl Into<String>) -> Self {
         Self {
             message: message.into().into(),
             kind: AppErrorKind::Other,
@@ -44,7 +44,7 @@ impl AppError {
         }
     }
 
-    pub fn already_exists(message: impl Into<String>) -> Self {
+    pub(crate) fn already_exists(message: impl Into<String>) -> Self {
         Self {
             message: message.into().into(),
             kind: AppErrorKind::AlreadyExists,

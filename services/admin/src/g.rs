@@ -7,16 +7,16 @@ use std::sync::Arc;
 use tokio::sync::Mutex;
 
 #[derive(Clone)]
-pub struct HttpState {
-    pub db: Arc<Mutex<DbConn>>,
-    pub conf: Arc<Conf>,
-    pub views: Views,
-    pub worker: Arc<Mutex<worker::Client>>,
-    pub twitch: Arc<twitch::Client>,
-    pub _jobs: Jobs,
+pub(crate) struct HttpState {
+    pub(crate) db: Arc<Mutex<DbConn>>,
+    pub(crate) conf: Arc<Conf>,
+    pub(crate) views: Views,
+    pub(crate) _worker: Arc<Mutex<worker::Client>>,
+    pub(crate) twitch: Arc<twitch::Client>,
+    pub(crate) _jobs: Jobs,
 }
 
-pub fn empty_string_is_none<'de, D, T: FromStr>(
+pub(crate) fn empty_string_is_none<'de, D, T: FromStr>(
     deserializer: D,
 ) -> StdResult<Option<T>, D::Error>
 where
@@ -30,7 +30,7 @@ where
     }
 }
 
-pub fn csv_string_is_vec<'de, D>(
+pub(crate) fn csv_string_is_vec<'de, D>(
     deserializer: D,
 ) -> StdResult<Vec<String>, D::Error>
 where
@@ -52,7 +52,9 @@ where
     }
 }
 
-pub fn string_is_usize<'de, D>(deserializer: D) -> StdResult<usize, D::Error>
+pub(crate) fn string_is_usize<'de, D>(
+    deserializer: D,
+) -> StdResult<usize, D::Error>
 where
     D: serde::Deserializer<'de>,
 {
@@ -71,7 +73,7 @@ where
     }
 }
 
-pub fn string_is_option_usize<'de, D>(
+pub(crate) fn string_is_option_usize<'de, D>(
     deserializer: D,
 ) -> StdResult<Option<usize>, D::Error>
 where
@@ -92,7 +94,9 @@ where
     }
 }
 
-pub fn string_is_bool<'de, D>(deserializer: D) -> StdResult<bool, D::Error>
+pub(crate) fn string_is_bool<'de, D>(
+    deserializer: D,
+) -> StdResult<bool, D::Error>
 where
     D: serde::Deserializer<'de>,
 {

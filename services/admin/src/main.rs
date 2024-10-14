@@ -41,7 +41,7 @@ async fn main() -> AnyResult<()> {
     let g = g::HttpState {
         conf: Arc::new(conf),
         db,
-        worker,
+        _worker: worker,
         views: Views::new()?,
         twitch: tc,
         _jobs: jobs,

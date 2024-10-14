@@ -15,7 +15,7 @@ use crate::{
 
 const JOB_NAME: &str = "download_clips";
 
-pub async fn schedule(
+pub(crate) async fn schedule(
     scheduler: &mut JobScheduler,
     db: DbLock,
 ) -> AnyResult<uuid::Uuid> {
@@ -50,7 +50,7 @@ pub async fn schedule(
     Ok(download_clips)
 }
 
-pub async fn once(db: DbLock, group_id: &GroupId) -> Result<()> {
+pub(crate) async fn once(db: DbLock, group_id: &GroupId) -> Result<()> {
     let group = {
         let db = db.lock().await;
         db::group::select_by_id(&db, group_id)?

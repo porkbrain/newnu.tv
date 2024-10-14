@@ -1,6 +1,6 @@
-pub mod download_clips;
-pub mod fetch_new_game_clips;
-pub mod map_clips_to_groups;
+pub(crate) mod download_clips;
+pub(crate) mod fetch_new_game_clips;
+pub(crate) mod map_clips_to_groups;
 
 use std::sync::Arc;
 use tokio_cron_scheduler::JobScheduler;
@@ -8,14 +8,15 @@ use tokio_cron_scheduler::JobScheduler;
 use crate::prelude::*;
 
 #[derive(Clone)]
-pub struct Jobs {
-    pub scheduler: JobScheduler,
-    pub fetch_new_game_clips: uuid::Uuid,
-    pub map_clips_to_groups: uuid::Uuid,
-    pub download_clips: uuid::Uuid,
+#[allow(dead_code)] // TODO: we will allow restarting of jobs later
+pub(crate) struct Jobs {
+    pub(crate) scheduler: JobScheduler,
+    pub(crate) fetch_new_game_clips: uuid::Uuid,
+    pub(crate) map_clips_to_groups: uuid::Uuid,
+    pub(crate) download_clips: uuid::Uuid,
 }
 
-pub async fn schedule_all(
+pub(crate) async fn schedule_all(
     db: DbLock,
     tc: Arc<twitch::Client>,
 ) -> AnyResult<Jobs> {

@@ -1,15 +1,17 @@
+#![allow(dead_code)] // for now until worker has some actual logic
+
 use crate::prelude::*;
 use serde::Serialize;
 use std::borrow::Cow;
 
 #[derive(Debug)]
-pub struct AppError {
-    pub message: Cow<'static, str>,
-    pub kind: AppErrorKind,
+pub(crate) struct AppError {
+    pub(crate) message: Cow<'static, str>,
+    pub(crate) kind: AppErrorKind,
 }
 
 #[derive(Default, Debug, Serialize)]
-pub enum AppErrorKind {
+pub(crate) enum AppErrorKind {
     BadRequest,
     AlreadyExists,
     NotFound,
@@ -22,28 +24,28 @@ pub enum AppErrorKind {
 }
 
 impl AppError {
-    pub fn internal(message: impl Into<String>) -> Self {
+    pub(crate) fn internal(message: impl Into<String>) -> Self {
         Self {
             message: message.into().into(),
             kind: AppErrorKind::Other,
         }
     }
 
-    pub fn already_exists(message: impl Into<String>) -> Self {
+    pub(crate) fn already_exists(message: impl Into<String>) -> Self {
         Self {
             message: message.into().into(),
             kind: AppErrorKind::AlreadyExists,
         }
     }
 
-    pub fn not_found(message: impl Into<String>) -> Self {
+    pub(crate) fn not_found(message: impl Into<String>) -> Self {
         Self {
             message: message.into().into(),
             kind: AppErrorKind::NotFound,
         }
     }
 
-    pub fn bad_request(message: impl Into<String>) -> Self {
+    pub(crate) fn bad_request(message: impl Into<String>) -> Self {
         Self {
             message: message.into().into(),
             kind: AppErrorKind::BadRequest,

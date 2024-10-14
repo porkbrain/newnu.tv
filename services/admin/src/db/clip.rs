@@ -7,7 +7,7 @@ use twitch::models::GameId;
 use crate::models::clip::{Clip, Filter, ShowParams};
 use crate::prelude::*;
 
-pub fn list(
+pub(crate) fn list(
     db: &DbConn,
     game_id: &GameId,
     ShowParams { pagination, filter }: &ShowParams,
@@ -70,7 +70,7 @@ pub fn list(
     Ok((total_count as usize, clips))
 }
 
-pub fn select_by_group_id(
+pub(crate) fn select_by_group_id(
     db: &DbConn,
     group_id: &models::group::GroupId,
     ShowParams { pagination, filter }: &ShowParams,

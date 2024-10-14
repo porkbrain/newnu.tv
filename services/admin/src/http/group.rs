@@ -11,7 +11,7 @@ use crate::{models::clip::GroupParams, prelude::*, views::Views};
 
 /// For convenience we use the same struct as the clip listing.
 /// This in turn means we get the params from query rather than body.
-pub async fn from_clips_query(
+pub(crate) async fn from_clips_query(
     State(s): State<g::HttpState>,
     Path(game_id): Path<twitch::models::GameId>,
     Query(query): Query<models::clip::Filter>,
@@ -47,12 +47,12 @@ pub async fn from_clips_query(
 }
 
 #[derive(Deserialize)]
-pub struct NewGroup {
+pub(crate) struct NewGroup {
     name: String,
     /// If not provided, then one is generated.
     color: Option<String>,
 }
-pub async fn create(
+pub(crate) async fn create(
     State(s): State<g::HttpState>,
     Form(NewGroup { name, color }): Form<NewGroup>,
 ) -> Result<Redirect> {
@@ -65,7 +65,7 @@ pub async fn create(
 }
 
 impl Views {
-    pub fn group(
+    pub(crate) fn group(
         &self,
         group: &models::group::Group,
         total_count: usize,
@@ -90,7 +90,7 @@ impl Views {
     }
 }
 
-pub async fn show(
+pub(crate) async fn show(
     State(s): State<g::HttpState>,
     Path(group_id): Path<GroupId>,
     Query(mut query): Query<models::clip::ShowParams>,
@@ -106,7 +106,7 @@ pub async fn show(
     s.views.group(&group, total_count, &clips, &query)
 }
 
-pub async fn archive(
+pub(crate) async fn archive(
     State(s): State<g::HttpState>,
     Path(group_id): Path<GroupId>,
 ) -> Result<Redirect> {
@@ -117,7 +117,7 @@ pub async fn archive(
     Ok(Redirect::to("/"))
 }
 
-pub async fn enable_download(
+pub(crate) async fn enable_download(
     State(s): State<g::HttpState>,
     Path(group_id): Path<GroupId>,
 ) -> Result<Redirect> {
@@ -128,7 +128,7 @@ pub async fn enable_download(
     Ok(Redirect::to(&format!("/groups/{group_id}")))
 }
 
-pub async fn disable_download(
+pub(crate) async fn disable_download(
     State(s): State<g::HttpState>,
     Path(group_id): Path<GroupId>,
 ) -> Result<Redirect> {
@@ -139,7 +139,7 @@ pub async fn disable_download(
     Ok(Redirect::to(&format!("/groups/{group_id}")))
 }
 
-pub async fn trigger_download(
+pub(crate) async fn trigger_download(
     State(s): State<g::HttpState>,
     Path(group_id): Path<GroupId>,
 ) -> Result<Redirect> {
@@ -148,7 +148,7 @@ pub async fn trigger_download(
     Ok(Redirect::to(&format!("/groups/{group_id}")))
 }
 
-pub async fn trigger_mapping(
+pub(crate) async fn trigger_mapping(
     State(s): State<g::HttpState>,
     Path(group_id): Path<GroupId>,
 ) -> Result<Redirect> {

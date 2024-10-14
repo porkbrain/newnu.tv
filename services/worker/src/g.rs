@@ -2,6 +2,6 @@ use crate::prelude::*;
 use std::sync::Arc;
 
 #[derive(Clone)]
-pub struct AppState {
-    pub conf: Arc<Conf>,
+pub(crate) struct AppState {
+    pub(crate) conf: Arc<Conf>,
 }

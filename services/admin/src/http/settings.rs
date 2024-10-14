@@ -9,7 +9,7 @@ use crate::{prelude::*, views::Views};
 
 impl Views {
     /// View global settings.
-    pub fn settings(&self, db: &DbConn) -> Result<Html<String>> {
+    pub(crate) fn settings(&self, db: &DbConn) -> Result<Html<String>> {
         let fetch_new_game_clips_cron =
             db::setting::fetch_new_game_clips_cron(db)?;
         let recorded_at_least_hours_ago =
@@ -38,18 +38,20 @@ impl Views {
     }
 }
 
-pub async fn show(State(s): State<g::HttpState>) -> Result<Html<String>> {
+pub(crate) async fn show(
+    State(s): State<g::HttpState>,
+) -> Result<Html<String>> {
     let db = s.db.lock().await;
     s.views.settings(&db)
 }
 
 #[derive(Deserialize)]
-pub struct EditSettings {
+pub(crate) struct EditSettings {
     fetch_new_game_clips_cron: Option<String>,
     recorded_at_least_hours_ago: Option<i64>,
 }
 
-pub async fn edit(
+pub(crate) async fn edit(
     State(s): State<g::HttpState>,
     Form(settings): Form<EditSettings>,
 ) -> Result<Redirect> {

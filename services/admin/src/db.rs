@@ -1,17 +1,17 @@
-pub mod clip;
-pub mod game;
+pub(crate) mod clip;
+pub(crate) mod game;
 /// Groups clips based on some criteria or manually
-pub mod group;
+pub(crate) mod group;
 /// Stores various settings in db instead of constants so that they can be
 /// changed via dashboard
-pub mod setting;
+pub(crate) mod setting;
 
 use crate::prelude::*;
 use rusqlite_migration::{Migrations, M};
 use std::ffi::OsStr;
 
 /// Opens and runs migrations.
-pub fn open(path: impl AsRef<OsStr>) -> AnyResult<DbConn> {
+pub(crate) fn open(path: impl AsRef<OsStr>) -> AnyResult<DbConn> {
     let mut db = DbConn::open(path.as_ref())?;
     rusqlite::vtab::array::load_module(&db)?;
     db::up(&mut db)?;
@@ -19,7 +19,7 @@ pub fn open(path: impl AsRef<OsStr>) -> AnyResult<DbConn> {
     Ok(db)
 }
 
-pub fn up(db: &mut DbConn) -> AnyResult<()> {
+pub(crate) fn up(db: &mut DbConn) -> AnyResult<()> {
     info!("Running db UP migrations");
 
     migrations().to_latest(db)?;
@@ -27,7 +27,7 @@ pub fn up(db: &mut DbConn) -> AnyResult<()> {
     Ok(())
 }
 
-pub fn down(db: &mut DbConn) -> AnyResult<()> {
+pub(crate) fn down(db: &mut DbConn) -> AnyResult<()> {
     info!("Running db DOWN migrations");
 
     migrations().to_version(db, 0)?;

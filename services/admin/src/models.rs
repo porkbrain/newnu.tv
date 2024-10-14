@@ -1,2 +1,2 @@
-pub mod clip;
-pub mod group;
+pub(crate) mod clip;
+pub(crate) mod group;

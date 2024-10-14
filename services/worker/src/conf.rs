@@ -2,13 +2,13 @@ use crate::prelude::*;
 use anyhow::Context;
 use std::{env, net::SocketAddr};
 
-pub struct Conf {
+pub(crate) struct Conf {
     /// For example 0.0.0.0:8080
-    pub rpc_addr: SocketAddr,
+    pub(crate) rpc_addr: SocketAddr,
 }
 
 impl Conf {
-    pub fn from_env() -> AnyResult<Self> {
+    pub(crate) fn from_env() -> AnyResult<Self> {
         info!("Loading config from environment");
 
         let rpc_addr = env::var("RPC_ADDR").context("RPC_ADDR")?;
