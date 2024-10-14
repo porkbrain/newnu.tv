@@ -36,11 +36,20 @@ pub fn csv_string_is_vec<'de, D>(
 where
     D: serde::Deserializer<'de>,
 {
-    let s = String::deserialize(deserializer)?;
-    Ok(s.split(',')
-        .filter(|s| !s.is_empty())
-        .map(|s| s.to_string())
-        .collect())
+    #[derive(Deserialize, Debug)]
+    #[serde(untagged)]
+    enum Either {
+        String(String),
+        Vec(Vec<String>),
+    }
+    match Either::deserialize(deserializer)? {
+        Either::String(s) => Ok(s
+            .split(',')
+            .filter(|s| !s.is_empty())
+            .map(|s| s.to_string())
+            .collect()),
+        Either::Vec(v) => Ok(v),
+    }
 }
 
 pub fn string_is_usize<'de, D>(deserializer: D) -> StdResult<usize, D::Error>

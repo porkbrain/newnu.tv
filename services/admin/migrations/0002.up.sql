@@ -7,8 +7,4 @@ CREATE TABLE settings (
 INSERT INTO settings (name, value)
 VALUES ('recorded_at_least_hours_ago', '8');
 INSERT INTO settings (name, value)
-VALUES (
-    'fetch_new_game_clips_cron',
-    -- sec   min   hour   day of month   month   day of week   year
-    '0      0     *      *              *       *             *'
-  );
+VALUES ('fetch_new_game_clips_cron', '@hourly');

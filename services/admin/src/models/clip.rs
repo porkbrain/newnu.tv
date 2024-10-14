@@ -91,6 +91,7 @@ pub struct Filter {
     #[serde(skip_serializing_if = "Option::is_none")]
     #[serde(deserialize_with = "g::empty_string_is_none")]
     pub max_recorded_at: Option<String>,
+    #[serde(default)]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[serde(deserialize_with = "g::empty_string_is_none")]
     pub is_downloaded: Option<bool>,

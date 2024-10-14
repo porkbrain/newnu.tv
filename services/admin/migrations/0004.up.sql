@@ -27,8 +27,8 @@ CREATE TABLE IF NOT EXISTS group_clips (
 INSERT INTO settings (name, value)
 VALUES (
         'map_clips_to_groups_cron',
-        -- sec   min                 hour   day of month   month   day of week   year
-        '0      0,10,20,30,40,50     *      *              *       *             *'
+        -- sec   min                 hour   day of month   month   day of week
+        '0      0,10,20,30,40,50     *      *              *       *'
     );
 INSERT INTO settings (name, value)
 VALUES ('default_page_size', '100');

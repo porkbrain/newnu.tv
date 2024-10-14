@@ -39,24 +39,69 @@ Available query parameters:
 <p>
     Clip mp4s belonging to this group are
     {{#if group.download_enabled}}
-        <b>not</b> automatically downloaded.
-        Enable downloads <a href="/groups/{{ group.id }}/download/auto/post">here</a>.
-    {{else}}
         being <b>automatically</b> downloaded.
-        Disable downloads <a href="/groups/{{ group.id }}/download/auto/delete">here</a>.
+
+        <form
+            action="/groups/{{ group.id }}/download/auto/delete"
+            method="post"
+        >
+            <button>
+                Disable downloads
+            </button>
+        </form>
+    {{else}}
+        <b>not</b> automatically downloaded.
+
+        <form
+            action="/groups/{{ group.id }}/download/auto/post"
+            method="post"
+        >
+            <button>
+                Enable downloads
+            </button>
+        </form>
     {{/if}}
 
-    Trigger immediate one time download
-    <a href="/groups/{{ group.id }}/download/post">here</a>.
+    <form
+        action="/groups/{{ group.id }}/download/post"
+        method="post"
+    >
+        <button>
+            Trigger immediate one time download
+        </button>
+    </form>
 </p>
 
 <p>
-    <a href="/groups/{{ group.id }}/archive/post">Archive</a> this group.
     An archived group will be hidden and no more automatic actions will be
     performed against it.
+
+    <form
+        action="/groups/{{ group.id }}/archive/post"
+        method="post"
+    >
+        <button>
+            Archive this group
+        </button>
+    </form>
 </p>
 
-{{!-- TODO: enabled automatic download --}}
+<p>
+    We download clips in regular intervals.
+    In another interval, we map new clips to this group if they match the
+    group's criteria.
+    It is possible that for a few minutes, new clips are not yet mapped to
+    this group.
+
+    <form
+        action="/groups/{{ group.id }}/map/post"
+        method="post"
+    >
+        <button>
+            Map recently searched clips now
+        </button>
+    </form>
+</p>
 
 <h2>Browse clips</h2>
 

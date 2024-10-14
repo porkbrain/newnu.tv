@@ -13,6 +13,8 @@ use crate::{
     prelude::*,
 };
 
+const JOB_NAME: &str = "download_clips";
+
 pub async fn schedule(
     scheduler: &mut JobScheduler,
     db: DbLock,
@@ -22,16 +24,18 @@ pub async fn schedule(
         db::setting::download_clips_cron(&db)?
     };
 
+    info!("Scheduling {JOB_NAME} with cron '{download_clips_cron}'");
+
     let download_clips = scheduler
         .add(Job::new_async(download_clips_cron, move |_, _| {
-            debug!("Triggering download_clips");
+            debug!("Triggering {JOB_NAME}");
 
             let db = Arc::clone(&db);
 
             Box::pin(async move {
                 let res = once_for_all(Arc::clone(&db)).await;
                 if let Err(e) = res {
-                    error!("Cannot trigger download_clips: {e}");
+                    error!("Cannot trigger {JOB_NAME}: {e}");
                 }
             })
         })?)
@@ -40,8 +44,8 @@ pub async fn schedule(
     let next_tick = scheduler
         .next_tick_for_job(download_clips)
         .await?
-        .ok_or_else(|| anyhow!("Cannot find next tick for download_clips"))?;
-    info!("Next tick for download_clips: {next_tick}");
+        .ok_or_else(|| anyhow!("Cannot find next tick for {JOB_NAME}"))?;
+    info!("Next tick for {JOB_NAME}: {next_tick}");
 
     Ok(download_clips)
 }
@@ -96,7 +100,7 @@ async fn once_(db: DbLock, groups: Vec<Group>) -> Result<()> {
                         ..Default::default()
                     },
                     filter: Filter {
-                        is_downloaded: Some(false),
+                        // is_downloaded: Some(false),
                         ..Default::default()
                     },
                 },

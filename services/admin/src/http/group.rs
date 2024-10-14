@@ -134,7 +134,7 @@ pub async fn disable_download(
 ) -> Result<Redirect> {
     let db = s.db.lock().await;
 
-    db::group::set_auto_download(&db, &group_id, true)?;
+    db::group::set_auto_download(&db, &group_id, false)?;
 
     Ok(Redirect::to(&format!("/groups/{group_id}")))
 }
@@ -144,6 +144,15 @@ pub async fn trigger_download(
     Path(group_id): Path<GroupId>,
 ) -> Result<Redirect> {
     crate::job::download_clips::once(Arc::clone(&s.db), &group_id).await?;
+
+    Ok(Redirect::to(&format!("/groups/{group_id}")))
+}
+
+pub async fn trigger_mapping(
+    State(s): State<g::HttpState>,
+    Path(group_id): Path<GroupId>,
+) -> Result<Redirect> {
+    crate::job::map_clips_to_groups::once(Arc::clone(&s.db), &group_id).await?;
 
     Ok(Redirect::to(&format!("/groups/{group_id}")))
 }

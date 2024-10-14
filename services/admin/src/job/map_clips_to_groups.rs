@@ -13,6 +13,8 @@ use crate::{
     prelude::*,
 };
 
+const JOB_NAME: &str = "map_clips_to_groups";
+
 pub async fn schedule(
     scheduler: &mut JobScheduler,
     db: DbLock,
@@ -22,16 +24,18 @@ pub async fn schedule(
         db::setting::map_clips_to_groups_cron(&db)?
     };
 
+    info!("Scheduling {JOB_NAME} with cron '{map_clips_to_groups_cron}'");
+
     let map_clips_to_groups = scheduler
         .add(Job::new_async(map_clips_to_groups_cron, move |_, _| {
-            debug!("Triggering map_clips_to_groups");
+            debug!("Triggering {JOB_NAME}");
 
             let db = Arc::clone(&db);
 
             Box::pin(async move {
                 let res = once_for_all(Arc::clone(&db)).await;
                 if let Err(e) = res {
-                    error!("Cannot trigger map_clips_to_groups: {e}");
+                    error!("Cannot trigger {JOB_NAME}: {e}");
                 }
             })
         })?)
@@ -40,10 +44,8 @@ pub async fn schedule(
     let next_tick = scheduler
         .next_tick_for_job(map_clips_to_groups)
         .await?
-        .ok_or_else(|| {
-            anyhow!("Cannot find next tick for map_clips_to_groups")
-        })?;
-    info!("Next tick for map_clips_to_groups: {next_tick}");
+        .ok_or_else(|| anyhow!("Cannot find next tick for {JOB_NAME}"))?;
+    info!("Next tick for {JOB_NAME}: {next_tick}");
 
     Ok(map_clips_to_groups)
 }

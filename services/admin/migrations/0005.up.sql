@@ -6,8 +6,8 @@ ADD COLUMN download_enabled BOOLEAN NOT NULL DEFAULT FALSE;
 INSERT INTO settings (name, value)
 VALUES (
         'download_clips_cron',
-        -- sec   min     hour   day of month   month   day of week   year
-        '0      0,30     *      *              *       *             *'
+        -- sec   min     hour   day of month   month   day of week
+        '0      0,30     *      *              *       *'
     );
 -- add a 'is_downloaded' flag to clips table which informs whether the clips
 -- has been persisted by the worker

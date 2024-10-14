@@ -16,6 +16,8 @@ use crate::prelude::*;
 const HOW_LONG_UNTIL_CLIP_HAS_REASONABLE_VIEWS: Duration =
     Duration::from_secs(8 * 3600);
 
+const JOB_NAME: &str = "fetch_new_game_clips";
+
 #[derive(Debug, Default)]
 pub struct Conf {
     /// Only clips newer than this will be fetched.
@@ -56,9 +58,11 @@ pub async fn schedule(
         (new_clips_cron, Some(chrono::Duration::hours(at_least_ago)))
     };
 
+    info!("Scheduling {JOB_NAME} with cron '{fetch_new_game_clips_cron}'");
+
     let fetch_new_game_clips = scheduler
         .add(Job::new_async(fetch_new_game_clips_cron, move |_, _| {
-            debug!("Triggering fetch_new_game_clips");
+            debug!("Triggering {JOB_NAME}");
 
             let db = Arc::clone(&db);
             let tc = Arc::clone(&tc);
@@ -74,7 +78,7 @@ pub async fn schedule(
                 )
                 .await;
                 if let Err(e) = res {
-                    error!("Cannot trigger fetch_new_game_clips: {e}");
+                    error!("Cannot trigger {JOB_NAME}: {e}");
                 }
             })
         })?)
@@ -83,10 +87,8 @@ pub async fn schedule(
     let next_tick = scheduler
         .next_tick_for_job(fetch_new_game_clips)
         .await?
-        .ok_or_else(|| {
-            anyhow!("Cannot find next tick for fetch_new_game_clips")
-        })?;
-    info!("Next tick for fetch_new_game_clips: {next_tick}");
+        .ok_or_else(|| anyhow!("Cannot find next tick for {JOB_NAME}"))?;
+    info!("Next tick for {JOB_NAME}: {next_tick}");
 
     Ok(fetch_new_game_clips)
 }
