@@ -19,19 +19,34 @@ mod views;
 
 use crate::prelude::*;
 use crate::views::Views;
+use anyhow::Context;
+use observation::RollingLogDir;
 use std::sync::Arc;
 use tokio::sync::Mutex;
 
 #[tokio::main]
 async fn main() -> AnyResult<()> {
     dotenvy::from_filename(".env.admin").ok();
-    let _guard = observation::with_rolling_logs(".tmp/admin/logs");
+    let _guard = observation::with_rolling_logs(
+        RollingLogDir::from_default_env().unwrap(),
+    );
 
     info!("web admin starting");
 
     let conf = Conf::from_env()?;
-    let worker = Arc::new(Mutex::new(conf.connect_lazy_worker_client().await?));
-    let tc = Arc::new(conf.construct_twitch_client().await?);
+
+    let worker = Arc::new(Mutex::new(
+        conf.connect_lazy_worker_client()
+            .await
+            .context("Connecting to worker")?,
+    ));
+
+    let tc = Arc::new(
+        conf.construct_twitch_client()
+            .await
+            .context("Constructing Twitch client")?,
+    );
+
     let mut db = db::open(conf.db_path())?;
     db::up(&mut db)?;
     let db = Arc::new(Mutex::new(db));

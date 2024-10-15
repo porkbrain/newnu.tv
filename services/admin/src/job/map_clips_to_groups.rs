@@ -24,7 +24,7 @@ pub(crate) async fn schedule(
         db::setting::map_clips_to_groups_cron(&db)?
     };
 
-    info!("Scheduling {JOB_NAME} with cron '{map_clips_to_groups_cron}'");
+    debug!("Scheduling {JOB_NAME} with cron '{map_clips_to_groups_cron}'");
 
     let map_clips_to_groups = scheduler
         .add(Job::new_async(map_clips_to_groups_cron, move |_, _| {

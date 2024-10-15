@@ -1,0 +1,7 @@
+FROM debian:bullseye-slim
+
+WORKDIR /app
+
+COPY target/x86_64-unknown-linux-gnu/debug/admin /usr/local/bin/newnutv_admin
+
+CMD ["newnutv_admin"]

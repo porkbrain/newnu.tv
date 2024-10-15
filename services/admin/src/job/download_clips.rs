@@ -24,7 +24,7 @@ pub(crate) async fn schedule(
         db::setting::download_clips_cron(&db)?
     };
 
-    info!("Scheduling {JOB_NAME} with cron '{download_clips_cron}'");
+    debug!("Scheduling {JOB_NAME} with cron '{download_clips_cron}'");
 
     let download_clips = scheduler
         .add(Job::new_async(download_clips_cron, move |_, _| {

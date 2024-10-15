@@ -10,7 +10,9 @@ pub(crate) struct Conf {
     /// For example 0.0.0.0:8080
     pub(crate) socket_addr: SocketAddr,
     pub(crate) sqlite_db_path: PathBuf,
-    pub(crate) worker_addr: SocketAddr,
+    /// We use [String] instead of [SocketAddr] because we might get a DNS name
+    /// instead of an IP.
+    pub(crate) worker_addr: String,
     pub(crate) twitch_client_id: String,
     pub(crate) twitch_secret: String,
 }
@@ -47,7 +49,7 @@ impl Conf {
 
         Ok(Self {
             socket_addr: socket_addr.parse()?,
-            worker_addr: worker_addr.parse()?,
+            worker_addr,
             sqlite_db_path: sqlite_db_path.into(),
             twitch_client_id,
             twitch_secret,
@@ -59,6 +61,7 @@ impl Conf {
     }
 
     /// The worker does not have to be running for this to succeed.
+    #[instrument(skip(self))]
     pub(crate) async fn connect_lazy_worker_client(
         &self,
     ) -> AnyResult<worker::Client> {

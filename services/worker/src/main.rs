@@ -5,6 +5,7 @@ mod prelude;
 mod service;
 
 use crate::prelude::*;
+use observation::RollingLogDir;
 use rpc::worker_server::WorkerServer;
 use std::sync::Arc;
 use tonic::transport::Server;
@@ -21,7 +22,9 @@ struct RpcWorker {
 #[tokio::main]
 async fn main() -> AnyResult<()> {
     dotenvy::from_filename(".env.worker").ok();
-    let _guard = observation::with_rolling_logs(".tmp/worker/logs");
+    let _guard = observation::with_rolling_logs(
+        RollingLogDir::from_default_env().unwrap(),
+    );
 
     info!("worker starting");
 
