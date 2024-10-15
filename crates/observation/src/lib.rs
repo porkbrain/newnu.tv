@@ -3,6 +3,12 @@ use std::path::Path;
 use tracing_appender::non_blocking::WorkerGuard;
 use tracing_subscriber::{fmt, layer::SubscriberExt, EnvFilter, Registry};
 
+const LOGS_DIR_ENV_VAR: &str = "LOGS_DIR";
+
+/// Use [Self::from_default_env] to read [LOGS_DIR_ENV_VAR] from the
+/// environment.
+pub struct RollingLogDir(String);
+
 /// Starts a global subscriber that
 /// - pretty prints to stderr
 /// - logs JSON lines to a rolling file hourly
@@ -37,4 +43,17 @@ pub fn with_rolling_logs(rolling_log_dir: impl AsRef<Path>) -> WorkerGuard {
     tracing::subscriber::set_global_default(registry).ok();
 
     file_guard
+}
+
+impl RollingLogDir {
+    /// If [LOGS_DIR_ENV_VAR] is set, returns the value as a [RollingLogDir].
+    pub fn from_default_env() -> Option<Self> {
+        std::env::var(LOGS_DIR_ENV_VAR).ok().map(Self)
+    }
+}
+
+impl AsRef<Path> for RollingLogDir {
+    fn as_ref(&self) -> &Path {
+        self.0.as_ref()
+    }
 }
