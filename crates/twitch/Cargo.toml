@@ -5,9 +5,13 @@ edition.workspace = true
 
 [dependencies]
 anyhow.workspace = true
-reqwest = "0.11.4"                               # must match the version in twitch_api2
-serde.workspace = true
 rusqlite = { optional = true, workspace = true }
+serde.workspace = true
+
+[dependencies.reqwest]
+version = "0.11.4"        # must match the version in twitch_api2
+default-features = false
+features = ["rustls-tls"]
 
 [dependencies.twitch_api2]
 version = "0.6"
