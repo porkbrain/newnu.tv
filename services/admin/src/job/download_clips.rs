@@ -76,13 +76,13 @@ async fn once_for_all(db: DbLock) -> Result<()> {
 }
 
 async fn once_(db: DbLock, groups: Vec<Group>) -> Result<()> {
-    // let before_check = now()
-    // let x = setting::last_checked_downloaded
-    // worker::clips_downloaded_since(x) (fs::metadata().modified())
-    // set clips is_downloaded = true to all ^
-    // settings::set(last_checked_downloaded, before_check)
+    // TODO: implement the following algorithm:
+    //      let before_check = now()
+    //      let x = setting::last_checked_downloaded
+    //      worker::clips_downloaded_since(x) (fs::metadata().modified())
+    //      set clips is_downloaded = true to all ^
+    //      settings::set(last_checked_downloaded, before_check)
 
-    // let clips =
     for Group { id: group_id, .. } in groups {
         let (total, clips) = {
             let db = db.lock().await;
@@ -112,11 +112,12 @@ async fn once_(db: DbLock, groups: Vec<Group>) -> Result<()> {
             clips_len = clips.len(),
         );
 
-        // TODO
+        // TODO: collect all clips into a hashmap by their id
     }
 
-    // worker.download_clips(clips.into_iter()
-    // .map(|c| rpc::Clip {id: c.id, url: c.url}))
+    // TODO: send a request to the worker to download the clips:
+    //      worker.download_clips(clips.into_iter()
+    //      .map(|c| rpc::Clip {id: c.id, url: c.url}))
 
     Ok(())
 }
