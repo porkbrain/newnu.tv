@@ -19,11 +19,12 @@ use axum::{
     Router,
 };
 use serde_json::json;
+use tower_http::trace::TraceLayer;
 
 pub(crate) async fn start(g: g::HttpState) -> AnyResult<()> {
     let socket_addr = g.conf.socket_addr;
 
-    let routes = routes().with_state(g);
+    let routes = routes().with_state(g).layer(TraceLayer::new_for_http());
 
     info!("http://{socket_addr}");
     let listener = tokio::net::TcpListener::bind(socket_addr).await.unwrap();

@@ -33,11 +33,6 @@ pub(crate) async fn trigger_fetch(
         ));
     }
 
-    info!(
-        "Triggering fetch new game clips job for game {game_id} in the \
-        last {at_most} hours, at least {at_least} hours ago"
-    );
-
     tokio::spawn(crate::job::fetch_new_game_clips::once(
         Arc::clone(&s.db),
         Arc::clone(&s.twitch),

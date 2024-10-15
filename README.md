@@ -36,6 +36,14 @@ This is a naive approach but works for now.
 
 Simple no-css handlebar templates.
 
+## [observation](crates/observation)
+
+We use `tracing` for logging.
+There are two layers right now:
+
+- pretty print to stderr
+- jsonlines to rolling log files
+
 # To do
 
 - worker can download clip mp4s from twitch

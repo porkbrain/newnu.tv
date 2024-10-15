@@ -7,7 +7,7 @@ pub struct Game {
     pub name: String,
     /// Note that this _might_ contain a placeholder for the size.
     ///
-    /// https://static-cdn.jtvnw.net/ttv-boxart/{game_id}-{width}x{height}.jpg
+    /// `https://static-cdn.jtvnw.net/ttv-boxart/{game_id}-{width}x{height}.jpg`
     pub box_art_url: String,
 }
 

@@ -1,5 +1,5 @@
 [workspace]
-members = ["crates/twitch", "services/admin", "services/worker"]
+members = ["crates/*", "services/*"]
 resolver = "2"
 package.version = "0.1.0"
 package.edition = "2021"
@@ -8,11 +8,10 @@ package.edition = "2021"
 anyhow = "1.0"
 axum = { version = "0.7", features = ["macros"] }
 chrono = { version = "0.4", features = ["serde"] }
+color-eyre = "0.6"
 dotenvy = "0.15"
 handlebars = "6.1"
 itertools = "0.13"
-log = "0.4"
-pretty_env_logger = "0.5"
 prost = "0.13"
 rand = "0.8"
 rusqlite = { version = "0.32", features = ["bundled-full"] }
@@ -23,4 +22,8 @@ tokio = { version = "1.29", features = ["full"] }
 tokio-cron-scheduler = "0.13"
 tonic = "0.12"
 tonic-build = "0.12"
+tower-http = { version = "0.6", features = ["trace"] }
+tracing = { version = "0.1", features = ["log"] }
+tracing-appender = "0.2"
+tracing-subscriber = { version = "0.3", features = ["json", "env-filter"] }
 uuid = "1.10"
