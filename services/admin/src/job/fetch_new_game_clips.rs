@@ -58,7 +58,7 @@ pub(crate) async fn schedule(
         (new_clips_cron, Some(chrono::Duration::hours(at_least_ago)))
     };
 
-    info!("Scheduling {JOB_NAME} with cron '{fetch_new_game_clips_cron}'");
+    debug!("Scheduling {JOB_NAME} with cron '{fetch_new_game_clips_cron}'");
 
     let fetch_new_game_clips = scheduler
         .add(Job::new_async(fetch_new_game_clips_cron, move |_, _| {
