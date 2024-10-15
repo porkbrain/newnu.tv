@@ -106,7 +106,11 @@ impl Client {
                 lang: c.language,
                 game_id: c.game_id.to_string(),
                 thumbnail_url: c.thumbnail_url,
-                video_id: c.video_id.to_string(),
+                video_id: if c.video_id.as_str().is_empty() {
+                    None
+                } else {
+                    Some(c.video_id.into_string())
+                },
             })
             .collect::<Vec<_>>();
 

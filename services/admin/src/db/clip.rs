@@ -28,7 +28,8 @@ impl<'a> InsertClipStatement<'a> {
                 url,
                 view_count,
                 lang,
-                game_id
+                game_id,
+                video_id
             )
             VALUES (
                 :id,
@@ -42,7 +43,8 @@ impl<'a> InsertClipStatement<'a> {
                 :url,
                 :view_count,
                 :lang,
-                :game_id
+                :game_id,
+                :video_id
             );",
         )?;
 
@@ -67,6 +69,7 @@ impl<'a> InsertClipStatement<'a> {
                 ":view_count": (clip.view_count as i64),
                 ":lang": clip.lang,
                 ":game_id": clip.game_id,
+                ":video_id": clip.video_id,
             })
             .map_err(|e| anyhow!("Cannot bind clip: {e}"))?;
 

@@ -30,5 +30,5 @@ pub struct Clip {
     /// Twitch assigned id
     pub game_id: String,
     /// ID of the video from which the clip was created.
-    pub video_id: String,
+    pub video_id: Option<String>,
 }

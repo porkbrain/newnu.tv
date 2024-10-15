@@ -13,3 +13,5 @@ VALUES (
 -- has been persisted by the worker
 ALTER TABLE clips
 ADD COLUMN is_downloaded BOOLEAN NOT NULL DEFAULT FALSE;
+ALTER TABLE clips
+ADD COLUMN video_id TEXT;
