@@ -36,13 +36,22 @@ This is a naive approach but works for now.
 
 Simple no-css handlebar templates.
 
-## [observation](crates/observation)
+## Crates
+
+### [`twitch`](crates/twitch)
+
+Wrapper around the Twitch API crate.
+This crate only exists because we cannot specify two versions of `reqwest` in the same project, and the Twitch API crate uses an older version in its public API while not exporting it, therefore requiring us to define it as a dependency.
+
+### [`observation`](crates/observation)
 
 We use `tracing` for logging.
 There are two layers right now:
 
 - pretty print to stderr
 - jsonlines to rolling log files
+
+This crate puts it all together so that the binaries can use it as a one-liner.
 
 # To do
 
