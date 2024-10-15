@@ -21,7 +21,7 @@ struct RpcWorker {
 #[tokio::main]
 async fn main() -> AnyResult<()> {
     dotenvy::from_filename(".env.worker").ok();
-    pretty_env_logger::try_init_timed().ok();
+    let _guard = observation::with_rolling_logs(".tmp/worker/logs");
 
     info!("worker starting");
 

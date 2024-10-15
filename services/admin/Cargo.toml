@@ -11,8 +11,7 @@ chrono.workspace = true
 dotenvy.workspace = true
 handlebars.workspace = true
 itertools.workspace = true
-log.workspace = true
-pretty_env_logger.workspace = true
+observation = { path = "../../crates/observation" }
 rand.workspace = true
 rusqlite_migration.workspace = true
 rusqlite.workspace = true
@@ -21,6 +20,12 @@ serde.workspace = true
 tokio-cron-scheduler.workspace = true
 tokio.workspace = true
 tonic.workspace = true
+tower-http.workspace = true
+tracing.workspace = true
 twitch = { path = "../../crates/twitch", features = ["sqlite"] }
 uuid.workspace = true
 worker = { path = "../worker" }
+
+
+[dev-dependencies]
+tracing-subscriber.workspace = true

@@ -590,7 +590,11 @@ mod tests {
     }
 
     fn prepare_db() -> Result<DbConn> {
-        pretty_env_logger::try_init_timed().ok();
+        tracing_subscriber::fmt()
+            .pretty()
+            .with_thread_names(true)
+            .try_init()
+            .ok();
 
         let db = db::open(":memory:")?;
 

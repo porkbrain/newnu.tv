@@ -1,6 +1,5 @@
 use anyhow::anyhow;
-use chrono::Utc;
-use db::clip::InsertClipStatement;
+use db::{clip::InsertClipStatement, game::GameWithLatestClipRecordedAt};
 use rand::Rng;
 use std::{sync::Arc, time::Duration};
 use tokio::{
@@ -105,7 +104,16 @@ pub(crate) async fn once(
         db::game::select_latest_clip_recorded_at(&db, &game_id)?
     };
 
-    once_(db, tc, conf, vec![(game_id, recorded_at)]).await
+    once_(
+        db,
+        tc,
+        conf,
+        vec![GameWithLatestClipRecordedAt {
+            game_id,
+            latest_clip_recorded_at: recorded_at,
+        }],
+    )
+    .await
 }
 
 async fn once_for_all(
@@ -129,18 +137,19 @@ async fn once_for_all(
     once_(db, tc, conf, game_ids).await
 }
 
+#[instrument(skip(db, tc))]
 async fn once_(
     db: DbLock,
     tc: Arc<twitch::Client>,
     conf: Conf,
-    game_ids: Vec<(twitch::models::GameId, Option<chrono::DateTime<Utc>>)>,
+    game_ids: Vec<GameWithLatestClipRecordedAt>,
 ) -> Result<()> {
     if game_ids.is_empty() {
         debug!("No games to fetch clips for, skipping job");
         return Ok(());
-    } else {
-        info!("Fetching new clips with {conf:?} for games {game_ids:?}");
     }
+
+    info!("Fetching new clips");
 
     let store_clips = spawn_channel_to_store_clips(db);
     // there'll be (at most) 1 request per game as pagination requires a request
@@ -148,7 +157,11 @@ async fn once_(
     let (fetch_clips, mut next_clip_request) =
         mpsc::channel::<QueueElement>(game_ids.len());
 
-    for (game_id, latest_clip_recorded_at) in game_ids {
+    for GameWithLatestClipRecordedAt {
+        game_id,
+        latest_clip_recorded_at,
+    } in game_ids
+    {
         if let Some(recorded_at) = latest_clip_recorded_at {
             debug!("Game {game_id} has latest clip recorded at {recorded_at}");
         } else {

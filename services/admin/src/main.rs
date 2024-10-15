@@ -25,7 +25,7 @@ use tokio::sync::Mutex;
 #[tokio::main]
 async fn main() -> AnyResult<()> {
     dotenvy::from_filename(".env.admin").ok();
-    pretty_env_logger::try_init_timed().ok();
+    let _guard = observation::with_rolling_logs(".tmp/admin/logs");
 
     info!("web admin starting");
 

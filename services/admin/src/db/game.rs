@@ -9,7 +9,7 @@ pub(crate) struct Game {
     pub(crate) name: String,
     /// Note that this _might_ contain a placeholder for the size.
     ///
-    /// https://static-cdn.jtvnw.net/ttv-boxart/{game_id}-{width}x{height}.jpg
+    /// `https://static-cdn.jtvnw.net/ttv-boxart/{game_id}-{width}x{height}.jpg`
     pub(crate) box_art_url: String,
     pub(crate) is_paused: bool,
 }
@@ -93,10 +93,16 @@ pub(crate) fn set_is_paused(
     }
 }
 
+#[derive(Debug)]
+pub(crate) struct GameWithLatestClipRecordedAt {
+    pub(crate) game_id: twitch::models::GameId,
+    pub(crate) latest_clip_recorded_at: Option<chrono::DateTime<Utc>>,
+}
+
 pub(crate) fn select_all_active_that_have_last_clip_older_than(
     db: &DbConn,
     duration: chrono::Duration,
-) -> Result<Vec<(twitch::models::GameId, Option<chrono::DateTime<Utc>>)>> {
+) -> Result<Vec<GameWithLatestClipRecordedAt>> {
     db.prepare(
         "
             SELECT
@@ -115,7 +121,12 @@ pub(crate) fn select_all_active_that_have_last_clip_older_than(
     )?
     .query_map(
         named_params! { ":last_queried": chrono::Utc::now() - duration },
-        |row| Ok((row.get("game_id")?, row.get("latest_clip_recorded_at")?)),
+        |row| {
+            Ok(GameWithLatestClipRecordedAt {
+                game_id: row.get("game_id")?,
+                latest_clip_recorded_at: row.get("latest_clip_recorded_at")?,
+            })
+        },
     )?
     .map(|res| res.map_err(AppError::from))
     .collect()

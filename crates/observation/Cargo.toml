@@ -1,0 +1,12 @@
+[package]
+name = "observation"
+description = "Provides helpers for observability of the system"
+version.workspace = true
+edition.workspace = true
+
+
+[dependencies]
+color-eyre.workspace = true
+tracing-appender.workspace = true
+tracing-subscriber.workspace = true
+tracing.workspace = true
