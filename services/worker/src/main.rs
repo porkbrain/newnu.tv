@@ -13,6 +13,7 @@ mod rpc {
     tonic::include_proto!("worker");
 }
 
+#[allow(dead_code)]
 struct RpcWorker {
     g: AppState,
 }

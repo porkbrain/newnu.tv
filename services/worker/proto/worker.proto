@@ -5,10 +5,13 @@ import "google/protobuf/empty.proto";
 package worker;
 
 service Worker {
-  rpc DownloadClip (DownloadClipRequest) returns (google.protobuf.Empty) {}
+  rpc DownloadClips (DownloadClipsRequest) returns (google.protobuf.Empty) {}
 }
 
-message DownloadClipRequest {
-  string clip_id = 1;
+message DownloadClipsRequest {
+  repeated Clip clips = 1;
+}
+message Clip {
+  string id = 1;
   string url = 2;
 }

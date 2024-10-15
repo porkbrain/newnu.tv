@@ -4,17 +4,17 @@ use rusqlite::{named_params, ErrorCode};
 use serde::Serialize;
 
 #[derive(Debug, Serialize)]
-pub struct Game {
-    pub id: twitch::models::GameId,
-    pub name: String,
+pub(crate) struct Game {
+    pub(crate) id: twitch::models::GameId,
+    pub(crate) name: String,
     /// Note that this _might_ contain a placeholder for the size.
     ///
     /// https://static-cdn.jtvnw.net/ttv-boxart/{game_id}-{width}x{height}.jpg
-    pub box_art_url: String,
-    pub is_paused: bool,
+    pub(crate) box_art_url: String,
+    pub(crate) is_paused: bool,
 }
 
-pub fn insert(db: &DbConn, game: &twitch::models::Game) -> Result<()> {
+pub(crate) fn insert(db: &DbConn, game: &twitch::models::Game) -> Result<()> {
     let res = db.execute(
         "INSERT INTO
             games (id, name, box_art_url)
@@ -36,7 +36,10 @@ pub fn insert(db: &DbConn, game: &twitch::models::Game) -> Result<()> {
     }
 }
 
-pub fn delete(db: &DbConn, game_id: &twitch::models::GameId) -> Result<()> {
+pub(crate) fn delete(
+    db: &DbConn,
+    game_id: &twitch::models::GameId,
+) -> Result<()> {
     db.execute(
         "DELETE FROM games WHERE id = :id;",
         named_params! { ":id": game_id },
@@ -45,7 +48,7 @@ pub fn delete(db: &DbConn, game_id: &twitch::models::GameId) -> Result<()> {
     .map_err(From::from)
 }
 
-pub fn select_all(db: &DbConn) -> Result<Vec<Game>> {
+pub(crate) fn select_all(db: &DbConn) -> Result<Vec<Game>> {
     let mut stmt = db.prepare_cached(
         "SELECT id, name, box_art_url, is_paused
         FROM games ORDER BY is_paused ASC, name ASC;",
@@ -57,7 +60,7 @@ pub fn select_all(db: &DbConn) -> Result<Vec<Game>> {
     Ok(games)
 }
 
-pub fn select_by_id(
+pub(crate) fn select_by_id(
     db: &DbConn,
     game_id: &twitch::models::GameId,
 ) -> Result<Game> {
@@ -71,7 +74,7 @@ pub fn select_by_id(
     Ok(game)
 }
 
-pub fn set_is_paused(
+pub(crate) fn set_is_paused(
     db: &DbConn,
     game_id: &twitch::models::GameId,
     is_paused: bool,
@@ -90,7 +93,7 @@ pub fn set_is_paused(
     }
 }
 
-pub fn select_all_active_that_have_last_clip_older_than(
+pub(crate) fn select_all_active_that_have_last_clip_older_than(
     db: &DbConn,
     duration: chrono::Duration,
 ) -> Result<Vec<(twitch::models::GameId, Option<chrono::DateTime<Utc>>)>> {
@@ -118,7 +121,7 @@ pub fn select_all_active_that_have_last_clip_older_than(
     .collect()
 }
 
-pub fn select_latest_clip_recorded_at(
+pub(crate) fn select_latest_clip_recorded_at(
     db: &DbConn,
     game_id: &twitch::models::GameId,
 ) -> Result<Option<chrono::DateTime<Utc>>> {

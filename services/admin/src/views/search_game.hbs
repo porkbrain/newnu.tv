@@ -2,7 +2,7 @@
 <ul>
     {{#each games as |game|}}
         <li>
-            <form action="/game/{{game.id}}/post" method="post">
+            <form action="/games/{{game.id}}/post" method="post">
                 <img src="{{game.box_art_url}}" alt="Thumbnail">
                 <button type="submit">{{game.name}}</button>
             </form>

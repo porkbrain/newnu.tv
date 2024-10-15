@@ -18,7 +18,7 @@ CREATE TABLE IF NOT EXISTS clips (
     title TEXT,
     -- the url to the thumbnail image
     thumbnail_url TEXT NOT NULL,
-    -- where can we download the video
+    -- link to the Twitch website with the clip
     url TEXT NOT NULL,
     -- the view count at the time of updated_at
     view_count INTEGER NOT NULL,
@@ -27,8 +27,8 @@ CREATE TABLE IF NOT EXISTS clips (
     lang TEXT NOT NULL DEFAULT 'en',
     -- not a foreign key, but can be joined with games table using this
     game_id TEXT NOT NULL,
-    -- last time this clip was updated in the database
-    updated_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%SZ', 'now')),
     -- when was the clip created in the database
-    created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%SZ', 'now'))
+    created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%SZ', 'now')),
+    -- when was the clip last updated
+    updated_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%SZ', 'now'))
 );

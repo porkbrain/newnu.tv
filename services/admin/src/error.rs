@@ -1,20 +1,20 @@
 use crate::prelude::*;
+use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
-use hyper::StatusCode;
 use serde::Serialize;
 use serde_json::json;
 use std::borrow::Cow;
 use std::error::Error as StdError;
 
 #[derive(Debug)]
-pub struct AppError {
-    pub message: Cow<'static, str>,
-    pub kind: AppErrorKind,
-    pub status: StatusCode,
+pub(crate) struct AppError {
+    pub(crate) message: Cow<'static, str>,
+    pub(crate) kind: AppErrorKind,
+    pub(crate) status: StatusCode,
 }
 
 #[derive(Default, Debug, Serialize)]
-pub enum AppErrorKind {
+pub(crate) enum AppErrorKind {
     /// Something wrong with the user request, see message for more info.
     BadRequest,
     AlreadyExists,
@@ -28,7 +28,7 @@ pub enum AppErrorKind {
 }
 
 impl AppError {
-    pub fn bad_request(message: impl Into<String>) -> Self {
+    pub(crate) fn bad_request(message: impl Into<String>) -> Self {
         Self {
             message: message.into().into(),
             kind: AppErrorKind::BadRequest,
@@ -36,7 +36,7 @@ impl AppError {
         }
     }
 
-    pub fn internal(message: impl Into<String>) -> Self {
+    pub(crate) fn internal(message: impl Into<String>) -> Self {
         Self {
             message: message.into().into(),
             kind: AppErrorKind::Other,
@@ -44,7 +44,7 @@ impl AppError {
         }
     }
 
-    pub fn already_exists(message: impl Into<String>) -> Self {
+    pub(crate) fn already_exists(message: impl Into<String>) -> Self {
         Self {
             message: message.into().into(),
             kind: AppErrorKind::AlreadyExists,
@@ -74,10 +74,21 @@ impl IntoResponse for AppError {
     }
 }
 
+impl std::fmt::Display for AppError {
+    fn fmt(
+        &self,
+        f: &mut std::fmt::Formatter<'_>,
+    ) -> StdResult<(), std::fmt::Error> {
+        write!(f, "{}", self.message)
+    }
+}
+
+impl StdError for AppError {}
+
 impl From<AnyError> for AppError {
     fn from(err: AnyError) -> Self {
         Self {
-            message: err.to_string().into(),
+            message: format!("{err}").into(),
             kind: AppErrorKind::Other,
             status: StatusCode::INTERNAL_SERVER_ERROR,
         }
@@ -87,7 +98,7 @@ impl From<AnyError> for AppError {
 impl From<handlebars::RenderError> for AppError {
     fn from(err: handlebars::RenderError) -> Self {
         Self {
-            message: err.to_string().into(),
+            message: format!("handlebars: {err}").into(),
             kind: AppErrorKind::Other,
             status: StatusCode::INTERNAL_SERVER_ERROR,
         }
@@ -117,20 +128,19 @@ impl From<tonic::Status> for AppError {
 impl From<rusqlite::Error> for AppError {
     fn from(err: rusqlite::Error) -> Self {
         Self {
-            message: err.to_string().into(),
+            message: format!("rusqlite: {err}").into(),
             kind: AppErrorKind::Other,
             status: StatusCode::INTERNAL_SERVER_ERROR,
         }
     }
 }
 
-impl std::fmt::Display for AppError {
-    fn fmt(
-        &self,
-        f: &mut std::fmt::Formatter<'_>,
-    ) -> StdResult<(), std::fmt::Error> {
-        write!(f, "{}", self.message)
+impl From<serde_json::Error> for AppError {
+    fn from(err: serde_json::Error) -> Self {
+        Self {
+            message: format!("serde_json: {err}").into(),
+            kind: AppErrorKind::Other,
+            status: StatusCode::INTERNAL_SERVER_ERROR,
+        }
     }
 }
-
-impl StdError for AppError {}

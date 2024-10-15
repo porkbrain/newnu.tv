@@ -6,21 +6,21 @@ use std::{
     path::{Path, PathBuf},
 };
 
-pub struct Conf {
+pub(crate) struct Conf {
     /// For example 0.0.0.0:8080
-    pub http_addr: SocketAddr,
-    pub sqlite_db_path: PathBuf,
-    pub worker_addr: SocketAddr,
-    pub twitch_client_id: String,
-    pub twitch_secret: String,
+    pub(crate) socket_addr: SocketAddr,
+    pub(crate) sqlite_db_path: PathBuf,
+    pub(crate) worker_addr: SocketAddr,
+    pub(crate) twitch_client_id: String,
+    pub(crate) twitch_secret: String,
 }
 
 impl Conf {
-    pub fn from_env() -> AnyResult<Self> {
+    pub(crate) fn from_env() -> AnyResult<Self> {
         info!("Loading config from environment");
 
-        let http_addr = env::var("HTTP_ADDR").context("HTTP_ADDR")?;
-        debug!("HTTP_ADDR: {http_addr}");
+        let socket_addr = env::var("SOCKET_ADDR").context("SOCKET_ADDR")?;
+        debug!("SOCKET_ADDR: {socket_addr}");
 
         let worker_addr = env::var("WORKER_ADDR").context("WORKER_ADDR")?;
         debug!("WORKER_ADDR: {worker_addr}");
@@ -46,7 +46,7 @@ impl Conf {
         );
 
         Ok(Self {
-            http_addr: http_addr.parse()?,
+            socket_addr: socket_addr.parse()?,
             worker_addr: worker_addr.parse()?,
             sqlite_db_path: sqlite_db_path.into(),
             twitch_client_id,
@@ -54,12 +54,12 @@ impl Conf {
         })
     }
 
-    pub fn db_path(&self) -> &Path {
+    pub(crate) fn db_path(&self) -> &Path {
         self.sqlite_db_path.as_ref()
     }
 
     /// The worker does not have to be running for this to succeed.
-    pub async fn connect_lazy_worker_client(
+    pub(crate) async fn connect_lazy_worker_client(
         &self,
     ) -> AnyResult<worker::Client> {
         let dst = format!("http://{}", self.worker_addr);
@@ -67,7 +67,9 @@ impl Conf {
         Ok(worker::Client::new(conn))
     }
 
-    pub async fn construct_twitch_client(&self) -> AnyResult<twitch::Client> {
+    pub(crate) async fn construct_twitch_client(
+        &self,
+    ) -> AnyResult<twitch::Client> {
         twitch::Client::new(
             self.twitch_client_id.as_str(),
             self.twitch_secret.as_str(),

@@ -1,6 +1,6 @@
 {{!--
 Available query parameters:
-- page_size             (default: 50)
+- page_size             (default: from db)
 - page_offset           (default: 0)
 - sort_direction_asc    (default: false)
 - broadcaster_name      (default: None)
@@ -17,7 +17,7 @@ Available query parameters:
 <link rel="icon" type="image/x-icon" href="{{game.box_art_url}}">
 
 <p>
-    <a href="/">Home</a> | <a href="/game/{{game.id}}">{{game.name}}</a> | Clips
+    <a href="/">Home</a> | <a href="/games/{{game.id}}">{{game.name}}</a> | Clips
 </p>
 <hr>
 
@@ -26,9 +26,9 @@ Available query parameters:
 <p>
     Sort by
     {{#if (equals "recorded_at" query.sort_by)}}
-        date / <a onclick="sortBy('view-count')">views</a>
+        date / <a onclick="sortBy('view_count')">views</a>
     {{else}}
-        <a onclick="sortBy('recorded-at')">date</a> / views
+        <a onclick="sortBy('recorded_at')">date</a> / views
     {{/if}}
 
     {{#if query.sort_direction_asc}}
@@ -48,7 +48,10 @@ Available query parameters:
 </p>
 
 <p>
-    There are <b>{{total_count}}</b> clips in total matching these criteria:
+    There are <b>{{total_count}}</b> clips in total matching criteria below.
+    Click <a onclick="createGroup()">here</a>
+    to create a new group from these criteria.
+    See <a href="/">homepage</a> for more information on groups.
 </p>
 
 <ul>
@@ -61,7 +64,7 @@ Available query parameters:
         <input
             type="number"
             id="min-views"
-            style="width: 64px;"
+            style="width: 128px;"
             value="{{ query.view_count_min }}"
         >
         and/or less than
@@ -80,7 +83,7 @@ Available query parameters:
         >Search in title</a> for
         <input
             type="text"
-            id="title-like"
+            id="title_like"
             value="{{ query.title_like }}"
         >
     </li>
@@ -90,8 +93,8 @@ Available query parameters:
         between
         <input
             type="datetime-local"
-            name="min-recorded-at"
-            id="min-recorded-at"
+            name="min_recorded_at"
+            id="min_recorded_at"
             value="{{ query.min_recorded_at }}">
         &#40;<a
             onclick="return setMinRecordedAtInputToDayAgo()"
@@ -100,8 +103,8 @@ Available query parameters:
         and
         <input
             type="datetime-local"
-            name="max-recorded-at"
-            id="max-recorded-at"
+            name="max_recorded_at"
+            id="max_recorded_at"
             value="{{ query.max_recorded_at }}">
         &#40;<a onclick="return setMaxRecordedAtInputToNow()">now</a>&#41;
     </li>
@@ -135,7 +138,7 @@ Available query parameters:
                 <img
                     src="{{thumbnail_url}}"
                     alt="{{title}}"
-                    title="{{title}}"
+                    title="{{title}} ({{ recorded_at }})"
                 >
             </a>
             <small>
@@ -175,28 +178,29 @@ Available query parameters:
     const params = new URLSearchParams(url.search);
 
     function setPageSize(size) {
-        params.set('page-size', size);
+        params.set('page_size', size);
         window.location.search = params.toString();
         return false;
     }
 
     function changePage(pageOffset) {
         const newOffset = Math.max(
+            {{!-- TODO: wrong name, if page offset is sent to APIs then this should be calculated there --}}
             {{query.page_offset}} + pageOffset * {{query.page_size}}, 0
         );
-        params.set('page-offset', newOffset);
+        params.set('page_offset', newOffset);
         window.location.search = params.toString();
         return false;
     }
 
     function sortBy(sortBy) {
-        params.set('sort-by', sortBy);
+        params.set('sort_by', sortBy);
         window.location.search = params.toString();
         return false;
     }
 
     function setSortDirectionAsc(asc) {
-        params.set('sort-direction-asc', asc);
+        params.set('sort_direction_asc', asc);
         window.location.search = params.toString();
         return false;
     }
@@ -206,15 +210,15 @@ Available query parameters:
         const minViews = document.getElementById('min-views').value;
 
         if (maxViews) {
-            params.set('view-count-max', maxViews);
+            params.set('view_count_max', maxViews);
         } else {
-            params.delete('view-count-max');
+            params.delete('view_count_max');
         }
 
         if (minViews) {
-            params.set('view-count-min', minViews);
+            params.set('view_count_min', minViews);
         } else {
-            params.delete('view-count-min');
+            params.delete('view_count_min');
         }
 
         window.location.search = params.toString();
@@ -222,12 +226,12 @@ Available query parameters:
     }
 
     function searchTitle() {
-        const titleLike = document.getElementById('title-like').value;
+        const titleLike = document.getElementById('title_like').value;
 
         if (titleLike) {
-            params.set('title-like', titleLike);
+            params.set('title_like', titleLike);
         } else {
-            params.delete('title-like');
+            params.delete('title_like');
         }
 
         window.location.search = params.toString();
@@ -235,7 +239,7 @@ Available query parameters:
     }
 
     function filterByBroadcaster(broadcasterName) {
-        params.set('broadcaster-name', broadcasterName);
+        params.set('broadcaster_name', broadcasterName);
         window.location.search = params.toString();
         return false;
     }
@@ -257,19 +261,19 @@ Available query parameters:
     }
 
     function filterByDatetime() {
-        const minRecordedAt = document.getElementById('min-recorded-at').value;
-        const maxRecordedAt = document.getElementById('max-recorded-at').value;
+        const minRecordedAt = document.getElementById('min_recorded_at').value;
+        const maxRecordedAt = document.getElementById('max_recorded_at').value;
 
         if (minRecordedAt) {
-            params.set('min-recorded-at', minRecordedAt);
+            params.set('min_recorded_at', minRecordedAt);
         } else {
-            params.delete('min-recorded-at');
+            params.delete('min_recorded_at');
         }
 
         if (maxRecordedAt) {
-            params.set('max-recorded-at', maxRecordedAt);
+            params.set('max_recorded_at', maxRecordedAt);
         } else {
-            params.delete('max-recorded-at');
+            params.delete('max_recorded_at');
         }
 
         window.location.search = params.toString();
@@ -279,7 +283,7 @@ Available query parameters:
     function setMaxRecordedAtInputToNow() {
         const now = new Date();
         const nowStr = now.toISOString().slice(0, 16);
-        document.getElementById('max-recorded-at').value = nowStr;
+        document.getElementById('max_recorded_at').value = nowStr;
         return false;
     }
 
@@ -287,7 +291,27 @@ Available query parameters:
         const now = new Date();
         const dayAgo = new Date(now - 24 * 60 * 60 * 1000);
         const dayAgoStr = dayAgo.toISOString().slice(0, 16);
-        document.getElementById('min-recorded-at').value = dayAgoStr;
+        document.getElementById('min_recorded_at').value = dayAgoStr;
+        return false;
+    }
+
+    // redirects to /games/{{ game.id }}/clips/groups/post with
+    // current query parameters, and POST method
+    function createGroup() {
+        const url = new URL(window.location.href);
+        const params = new URLSearchParams(url.search);
+        const redirect = '/games/{{ game.id }}/clips/groups/post?' + params.toString();
+
+        const f = document.createElement('form');
+        f.action = redirect;
+        f.method = 'POST';
+
+        const i = document.createElement('input');
+        f.appendChild(i);
+
+        document.body.appendChild(f);
+        f.submit();
+
         return false;
     }
 
@@ -300,11 +324,11 @@ Available query parameters:
         });
     }
 
-    onEnter(document.getElementById('title-like'), searchTitle);
+    onEnter(document.getElementById('title_like'), searchTitle);
     onEnter(document.getElementById('min-views'), clampViews);
     onEnter(document.getElementById('max-views'), clampViews);
-    onEnter(document.getElementById('min-recorded-at'), filterByDatetime);
-    onEnter(document.getElementById('max-recorded-at'), filterByDatetime);
+    onEnter(document.getElementById('min_recorded_at'), filterByDatetime);
+    onEnter(document.getElementById('max_recorded_at'), filterByDatetime);
 </script>
 
 <style>

@@ -3,7 +3,7 @@
 <h2>Games</h2>
 <div>
     {{#each games as |game|}}
-        <a href="/game/{{game.id}}">
+        <a href="/games/{{game.id}}">
             <img
                 width="156"
                 src="{{game.box_art_url}}"
@@ -15,10 +15,30 @@
 </div>
 
 <h3>Add a new one</h3>
-<form action="/search/game" method="get">
+<form action="/search/games" method="get">
     <input type="text" name="q" placeholder="what's the game?">
     <button>Search for matches</button>
 </form>
+
+<h2>Groups</h2>
+<ul>
+    {{#each groups as |group|}}
+        <li>
+            <a href="/groups/{{ group.id }}">{{ group.name }}</a>
+
+            {{!-- a coloured cube --}}
+            <div style="
+                    display: inline-block;
+                    width: 1em;
+                    height: 1em;
+                    background-color: {{ group.color }};
+                    margin-left: 0.5em;
+                    border: 2px solid black;"></div>
+        </li>
+    {{/each}}
+</ul>
+
+{{!-- TODO: explain groups --}}
 
 <h2 style="color: red">Danger zone</h2>
 <p>

@@ -1,0 +1,251 @@
+{{!--
+TODO: deduplicate with services/admin/src/views/clips.hbs
+
+Available query parameters:
+- page_size             (default: from db)
+- page_offset           (default: 0)
+- sort_direction_asc    (default: false)
+- sort_by               (default: view_count)
+--}}
+
+{{#*inline "page"}}
+<p>
+    <a href="/">Home</a> | Groups | {{ group.name }}
+</p>
+<hr>
+
+<h2>
+    {{ group.name }}
+    {{!-- TODO: deduplicate with homepage --}}
+    <div style="
+                    display: inline-block;
+                    width: 1em;
+                    height: 1em;
+                    background-color: {{ group.color }};
+                    margin-left: 0.5em;
+                    border: 2px solid black;"></div>
+</h2>
+
+{{#if group.metadata_json}}
+    <pre>{{ stringify group.metadata_json }}</pre>
+{{/if}}
+
+<p>
+    Useful actions can be performed in bulk on clips in a group.
+    Clips can be grouped either manually by selecting them in the clip browser
+    or automatically by some filter criteria selected also in the clip browser.
+</p>
+
+<p>
+    Clip mp4s belonging to this group are
+    {{#if group.download_enabled}}
+        being <b>automatically</b> downloaded.
+
+        <form
+            action="/groups/{{ group.id }}/download/auto/delete"
+            method="post"
+        >
+            <button>
+                Disable downloads
+            </button>
+        </form>
+    {{else}}
+        <b>not</b> automatically downloaded.
+
+        <form
+            action="/groups/{{ group.id }}/download/auto/post"
+            method="post"
+        >
+            <button>
+                Enable downloads
+            </button>
+        </form>
+    {{/if}}
+
+    <form
+        action="/groups/{{ group.id }}/download/post"
+        method="post"
+    >
+        <button>
+            Trigger immediate one time download
+        </button>
+    </form>
+</p>
+
+<p>
+    An archived group will be hidden and no more automatic actions will be
+    performed against it.
+
+    <form
+        action="/groups/{{ group.id }}/archive/post"
+        method="post"
+    >
+        <button>
+            Archive this group
+        </button>
+    </form>
+</p>
+
+<p>
+    We download clips in regular intervals.
+    In another interval, we map new clips to this group if they match the
+    group's criteria.
+    It is possible that for a few minutes, new clips are not yet mapped to
+    this group.
+
+    <form
+        action="/groups/{{ group.id }}/map/post"
+        method="post"
+    >
+        <button>
+            Map recently searched clips now
+        </button>
+    </form>
+</p>
+
+<p>
+    <form
+        action="/groups/{{ group.id }}/name/update"
+        method="post"
+    >
+        <input type="text" name="new_name" value="{{ group.name }}">
+        <button>Rename</button>
+    </form>
+</p>
+
+<h2>Browse clips</h2>
+
+<p>
+    Sort by
+    {{#if (equals "recorded_at" query.sort_by)}}
+        date / <a onclick="sortBy('view_count')">views</a>
+    {{else}}
+        <a onclick="sortBy('recorded_at')">date</a> / views
+    {{/if}}
+
+    {{#if query.sort_direction_asc}}
+        &nbsp;&uarr;&nbsp;
+        <a
+            title="Highest/latest first"
+            onclick="setSortDirectionAsc(false)"
+        >&nbsp;&darr;&nbsp;</a>
+    {{else}}
+        <a
+            title="Lowest/earliest first"
+            onclick="setSortDirectionAsc(true)"
+        >&nbsp;&uarr;&nbsp;</a>
+
+        &nbsp;&darr;&nbsp;
+    {{/if}}
+</p>
+
+<p>
+    There are <b>{{total_count}}</b> clips in total.
+</p>
+
+<hr>
+
+<div class="listing">
+    <div class="item">
+        {{#each clips}}
+        <span>
+            <a href="{{url}}" target="_blank">
+                <img
+                    src="{{thumbnail_url}}"
+                    alt="{{title}}"
+                    title="{{title}}"
+                >
+            </a>
+            <small>
+                {{broadcaster_name}}
+                {{#if (equals view_count 1)}}
+                    &#40;1 view,
+                {{else}}
+                    &#40;{{view_count}} views,
+                {{/if}}
+                {{duration.secs}}s&#41;
+            </small>
+        </span>
+        {{/each}}
+    </div>
+</div>
+
+<hr>
+
+<p style="text-align: center;">
+    <a onclick="changePage(-5)">&nbsp;&nbsp;&laquo;&nbsp;&nbsp;</a>&nbsp;&nbsp;
+    <a onclick="changePage(-1)">&nbsp;&nbsp;&lsaquo;&nbsp;&nbsp;</a>&nbsp;&nbsp;
+    {{add (div query.page_offset query.page_size) 1}}&nbsp;&nbsp;
+    <a onclick="changePage(1)">&nbsp;&nbsp;&rsaquo;&nbsp;&nbsp;</a>&nbsp;&nbsp;
+    <a onclick="changePage(5)">&nbsp;&nbsp;&raquo;&nbsp;&nbsp;</a>
+
+    <br>
+    Page size
+    <a onclick="setPageSize(50)">50</a> |
+    <a onclick="setPageSize(100)">100</a> |
+    <a onclick="setPageSize(200)">200</a>
+</p>
+
+<script type="text/javascript">
+    const url = new URL(window.location.href);
+    const params = new URLSearchParams(url.search);
+
+    function setPageSize(size) {
+        params.set('page_size', size);
+        window.location.search = params.toString();
+        return false;
+    }
+
+    function changePage(pageOffset) {
+        const newOffset = Math.max(
+            {{query.page_offset}} + pageOffset * {{query.page_size}}, 0
+        );
+        params.set('page_offset', newOffset);
+        window.location.search = params.toString();
+        return false;
+    }
+
+    function sortBy(sortBy) {
+        params.set('sort_by', sortBy);
+        window.location.search = params.toString();
+        return false;
+    }
+
+    function setSortDirectionAsc(asc) {
+        params.set('sort_direction_asc', asc);
+        window.location.search = params.toString();
+        return false;
+    }
+</script>
+
+<style>
+    .listing {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: space-between;
+    }
+
+    .item {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: space-between;
+    }
+
+    .item span {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        margin: 0.25rem;
+    }
+
+    .item span img {
+        width: 333px;
+    }
+
+    .item span small {
+        text-align: center;
+    }
+</style>
+
+{{/inline}}
+{{> (lookup this "parent")}}

@@ -94,9 +94,7 @@ impl Client {
             .data
             .into_iter()
             .map(|c| models::Clip {
-                url: c.thumbnail_url.split("-preview-").collect::<Vec<_>>()[0]
-                    .to_string()
-                    + ".mp4",
+                url: c.url,
                 id: c.id,
                 broadcaster_id: c.broadcaster_id.to_string(),
                 broadcaster_name: c.broadcaster_name.to_string(),
@@ -108,6 +106,11 @@ impl Client {
                 lang: c.language,
                 game_id: c.game_id.to_string(),
                 thumbnail_url: c.thumbnail_url,
+                video_id: if c.video_id.as_str().is_empty() {
+                    None
+                } else {
+                    Some(c.video_id.into_string())
+                },
             })
             .collect::<Vec<_>>();
 

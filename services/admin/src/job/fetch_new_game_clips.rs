@@ -1,10 +1,13 @@
+use anyhow::anyhow;
 use chrono::Utc;
+use db::clip::InsertClipStatement;
 use rand::Rng;
 use std::{sync::Arc, time::Duration};
 use tokio::{
     sync::mpsc::{self, error::TryRecvError, Sender, UnboundedSender},
     time::{sleep, sleep_until, Instant},
 };
+use tokio_cron_scheduler::{Job, JobScheduler};
 use twitch::twitch_api2::types::Timestamp;
 
 use crate::prelude::*;
@@ -14,12 +17,14 @@ use crate::prelude::*;
 const HOW_LONG_UNTIL_CLIP_HAS_REASONABLE_VIEWS: Duration =
     Duration::from_secs(8 * 3600);
 
+const JOB_NAME: &str = "fetch_new_game_clips";
+
 #[derive(Debug, Default)]
-pub struct Conf {
+pub(crate) struct Conf {
     /// Only clips newer than this will be fetched.
-    pub recorded_at_most_ago: Option<chrono::Duration>,
+    pub(crate) recorded_at_most_ago: Option<chrono::Duration>,
     /// Only clips older than this will be fetched.
-    pub recorded_at_least_ago: Option<chrono::Duration>,
+    pub(crate) recorded_at_least_ago: Option<chrono::Duration>,
 }
 
 /// Like a breath-first search, we start with a seed where we have one element
@@ -41,7 +46,55 @@ struct QueueElement {
     fetch_clips: Sender<QueueElement>,
 }
 
-pub async fn once(
+pub(crate) async fn schedule(
+    scheduler: &mut JobScheduler,
+    db: DbLock,
+    tc: Arc<twitch::Client>,
+) -> AnyResult<uuid::Uuid> {
+    let (fetch_new_game_clips_cron, recorded_at_least_ago) = {
+        let db = db.lock().await;
+        let new_clips_cron = db::setting::fetch_new_game_clips_cron(&db)?;
+        let at_least_ago = db::setting::recorded_at_least_hours_ago(&db)?;
+
+        (new_clips_cron, Some(chrono::Duration::hours(at_least_ago)))
+    };
+
+    info!("Scheduling {JOB_NAME} with cron '{fetch_new_game_clips_cron}'");
+
+    let fetch_new_game_clips = scheduler
+        .add(Job::new_async(fetch_new_game_clips_cron, move |_, _| {
+            debug!("Triggering {JOB_NAME}");
+
+            let db = Arc::clone(&db);
+            let tc = Arc::clone(&tc);
+
+            Box::pin(async move {
+                let res = once_for_all(
+                    Arc::clone(&db),
+                    Arc::clone(&tc),
+                    Conf {
+                        recorded_at_most_ago: None, // last clip
+                        recorded_at_least_ago,
+                    },
+                )
+                .await;
+                if let Err(e) = res {
+                    error!("Cannot trigger {JOB_NAME}: {e}");
+                }
+            })
+        })?)
+        .await?;
+
+    let next_tick = scheduler
+        .next_tick_for_job(fetch_new_game_clips)
+        .await?
+        .ok_or_else(|| anyhow!("Cannot find next tick for {JOB_NAME}"))?;
+    info!("Next tick for {JOB_NAME}: {next_tick}");
+
+    Ok(fetch_new_game_clips)
+}
+
+pub(crate) async fn once(
     db: DbLock,
     tc: Arc<twitch::Client>,
     conf: Conf,
@@ -55,7 +108,7 @@ pub async fn once(
     once_(db, tc, conf, vec![(game_id, recorded_at)]).await
 }
 
-pub async fn once_for_all(
+async fn once_for_all(
     db: DbLock,
     tc: Arc<twitch::Client>,
     conf: Conf,
@@ -195,7 +248,7 @@ fn spawn_channel_to_store_clips(
         let store =
             |db: &mut DbConn, buffer: &mut Vec<twitch::models::Clip>| {
                 let tx = db.transaction()?;
-                let mut stmt = twitch::models::InsertClipStatement::new(&tx)?;
+                let mut stmt = InsertClipStatement::new(&tx)?;
 
                 for clip in buffer.iter() {
                     stmt.execute(clip)?;

@@ -2,8 +2,10 @@
 mod clips;
 /// endpoints which ease development
 mod dev;
-/// endpoints for game management
+/// endpoints for twitch category management
 mod game;
+/// endpoints for group (of clips) management
+mod group;
 /// homepage
 mod home;
 /// endpoints for global settings
@@ -11,23 +13,21 @@ mod settings;
 
 use crate::prelude::*;
 use axum::{
+    http::StatusCode,
     response::IntoResponse,
     routing::{get, post},
     Router,
 };
-use hyper::StatusCode;
 use serde_json::json;
-use std::net::SocketAddr;
 
-pub async fn start(g: g::HttpState) -> AnyResult<()> {
-    let http_addr = g.conf.http_addr;
+pub(crate) async fn start(g: g::HttpState) -> AnyResult<()> {
+    let socket_addr = g.conf.socket_addr;
 
     let routes = routes().with_state(g);
 
-    info!("http://{http_addr}");
-    axum::Server::bind(&http_addr)
-        .serve(routes.into_make_service_with_connect_info::<SocketAddr>())
-        .await?;
+    info!("http://{socket_addr}");
+    let listener = tokio::net::TcpListener::bind(socket_addr).await.unwrap();
+    axum::serve(listener, routes).await.unwrap();
 
     Ok(())
 }
@@ -49,17 +49,38 @@ fn routes() -> Router<g::HttpState> {
     // i'll take the latter any day of the week
     let app = Router::new()
         .route("/", get(home::page))
-        .route("/search/game", get(game::search))
-        .route("/game/:game_id", get(game::show))
-        .route("/game/:game_id/post", post(game::add))
-        .route("/game/:game_id/delete", post(game::delete))
-        .route("/game/:game_id/pause/post", post(game::pause))
-        .route("/game/:game_id/pause/delete", post(game::resume))
-        .route("/game/:game_id/clips", get(clips::show))
+        .route("/search/games", get(game::search))
+        .route("/games/:game_id", get(game::show))
+        .route("/games/:game_id/post", post(game::add))
+        .route("/games/:game_id/delete", post(game::delete))
+        .route("/games/:game_id/pause/post", post(game::pause))
+        .route("/games/:game_id/pause/delete", post(game::resume))
+        .route("/games/:game_id/clips", get(clips::show))
         .route(
-            "/game/:game_id/clips/fetch/post",
+            "/games/:game_id/clips/groups/post",
+            post(group::from_clips_query),
+        )
+        .route(
+            "/games/:game_id/clips/fetch/post",
             post(clips::trigger_fetch),
         )
+        .route("/groups/post", post(group::create))
+        .route("/groups/:group_id", get(group::show))
+        .route("/groups/:group_id/archive/post", post(group::archive))
+        .route(
+            "/groups/:group_id/download/auto/post",
+            post(group::enable_download),
+        )
+        .route(
+            "/groups/:group_id/download/auto/delete",
+            post(group::disable_download),
+        )
+        .route(
+            "/groups/:group_id/download/post",
+            post(group::trigger_download),
+        )
+        .route("/groups/:group_id/map/post", post(group::trigger_mapping))
+        .route("/groups/:group_id/name/update", post(group::rename))
         .route("/settings", get(settings::show))
         .route("/settings/put", post(settings::edit))
         .route("/dev/reset/post", post(dev::reset))
