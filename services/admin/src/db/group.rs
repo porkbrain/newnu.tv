@@ -182,6 +182,20 @@ pub(crate) fn set_auto_download(
     Ok(())
 }
 
+pub(crate) fn set_name(db: &DbConn, id: &GroupId, name: &str) -> Result<()> {
+    db.execute(
+        "UPDATE groups
+        SET name = :name
+        WHERE id = :id;",
+        named_params! {
+            ":id": id,
+            ":name": name,
+        },
+    )?;
+
+    Ok(())
+}
+
 impl TryFrom<&rusqlite::Row<'_>> for Group {
     type Error = rusqlite::Error;
 

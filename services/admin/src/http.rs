@@ -80,6 +80,7 @@ fn routes() -> Router<g::HttpState> {
             post(group::trigger_download),
         )
         .route("/groups/:group_id/map/post", post(group::trigger_mapping))
+        .route("/groups/:group_id/name/update", post(group::rename))
         .route("/settings", get(settings::show))
         .route("/settings/put", post(settings::edit))
         .route("/dev/reset/post", post(dev::reset))

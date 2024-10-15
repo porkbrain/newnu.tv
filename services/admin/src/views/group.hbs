@@ -103,6 +103,16 @@ Available query parameters:
     </form>
 </p>
 
+<p>
+    <form
+        action="/groups/{{ group.id }}/name/update"
+        method="post"
+    >
+        <input type="text" name="new_name" value="{{ group.name }}">
+        <button>Rename</button>
+    </form>
+</p>
+
 <h2>Browse clips</h2>
 
 <p>

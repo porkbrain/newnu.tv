@@ -157,6 +157,22 @@ pub(crate) async fn trigger_mapping(
     Ok(Redirect::to(&format!("/groups/{group_id}")))
 }
 
+#[derive(Deserialize)]
+pub(crate) struct RenameGroup {
+    new_name: String,
+}
+pub(crate) async fn rename(
+    State(s): State<g::HttpState>,
+    Path(group_id): Path<GroupId>,
+    Form(RenameGroup { new_name }): Form<RenameGroup>,
+) -> Result<Redirect> {
+    let db = s.db.lock().await;
+
+    db::group::set_name(&db, &group_id, &new_name)?;
+
+    Ok(Redirect::to(&format!("/groups/{group_id}")))
+}
+
 fn generate_random_color() -> String {
     use rand::Rng;
     let mut rng = rand::thread_rng();

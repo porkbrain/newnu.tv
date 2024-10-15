@@ -18,7 +18,7 @@ CREATE TABLE IF NOT EXISTS clips (
     title TEXT,
     -- the url to the thumbnail image
     thumbnail_url TEXT NOT NULL,
-    -- where can we download the video
+    -- link to the Twitch website with the clip
     url TEXT NOT NULL,
     -- the view count at the time of updated_at
     view_count INTEGER NOT NULL,

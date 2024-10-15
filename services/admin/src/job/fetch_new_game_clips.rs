@@ -1,5 +1,6 @@
 use anyhow::anyhow;
 use chrono::Utc;
+use db::clip::InsertClipStatement;
 use rand::Rng;
 use std::{sync::Arc, time::Duration};
 use tokio::{
@@ -247,7 +248,7 @@ fn spawn_channel_to_store_clips(
         let store =
             |db: &mut DbConn, buffer: &mut Vec<twitch::models::Clip>| {
                 let tx = db.transaction()?;
-                let mut stmt = twitch::models::InsertClipStatement::new(&tx)?;
+                let mut stmt = InsertClipStatement::new(&tx)?;
 
                 for clip in buffer.iter() {
                     stmt.execute(clip)?;

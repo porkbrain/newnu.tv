@@ -7,6 +7,73 @@ use twitch::models::GameId;
 use crate::models::clip::{Clip, Filter, ShowParams};
 use crate::prelude::*;
 
+/// Bind clips to it and execute all inserts at once.
+pub(crate) struct InsertClipStatement<'a>(rusqlite::Statement<'a>);
+
+impl<'a> InsertClipStatement<'a> {
+    pub(crate) fn new(db: &'a rusqlite::Connection) -> Result<Self> {
+        // replace will update view count
+        let stmt = db.prepare(
+            "
+            INSERT OR REPLACE INTO
+            clips(
+                id,
+                broadcaster_id,
+                broadcaster_name,
+                creator_name,
+                recorded_at,
+                duration,
+                title,
+                thumbnail_url,
+                url,
+                view_count,
+                lang,
+                game_id
+            )
+            VALUES (
+                :id,
+                :broadcaster_id,
+                :broadcaster_name,
+                :creator_name,
+                :recorded_at,
+                :duration,
+                :title,
+                :thumbnail_url,
+                :url,
+                :view_count,
+                :lang,
+                :game_id
+            );",
+        )?;
+
+        Ok(Self(stmt))
+    }
+
+    pub(crate) fn execute(
+        &mut self,
+        clip: &twitch::models::Clip,
+    ) -> Result<()> {
+        self.0
+            .execute(rusqlite::named_params! {
+                ":id": clip.id,
+                ":broadcaster_id": clip.broadcaster_id,
+                ":broadcaster_name": clip.broadcaster_name,
+                ":creator_name": clip.creator_name,
+                ":recorded_at": clip.recorded_at,
+                ":duration": (clip.duration.as_secs() as i64),
+                ":title": clip.title,
+                ":thumbnail_url": clip.thumbnail_url,
+                ":url": clip.url,
+                ":view_count": (clip.view_count as i64),
+                ":lang": clip.lang,
+                ":game_id": clip.game_id,
+            })
+            .map_err(|e| anyhow!("Cannot bind clip: {e}"))?;
+
+        Ok(())
+    }
+}
+
 pub(crate) fn list(
     db: &DbConn,
     game_id: &GameId,
