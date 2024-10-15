@@ -9,13 +9,19 @@ We download popular Twitch content, classify it and group it.
 Then we export video files ready to be edited together into a final video
 which can be uploaded to YouTube.
 
-## Dependencies
+## How to run this?
 
-```bash
-apt install protobuf-compiler libprotobuf-dev
-```
+If you want to use docker for local development, then install [`cross`][cross-install] and [`just`][just-install].
 
-Alternatively, you can install it from [source][grpc-protoc-install] as some package managers have quite dated versions.
+If you don't want to use it, then you need to [install][grpc-protoc-install] from source or if your package manager has a recent version, you can use that.
+Just be careful as some package managers have quite dated versions.
+
+There are two relevant commands you want to run if you use docker for local development:
+
+1. **`$ just up`** to compile everything and start all containers.
+   This process prints logs to stdout and into `./tmp/**/logs` directories for each service.
+
+2. **`$ just watch`** to watch for changes in the source code, recompile and restart relevant containers
 
 ## Database
 
@@ -74,3 +80,5 @@ This crate puts it all together so that the binaries can use it as a one-liner.
 <!-- List of Links -->
 
 [grpc-protoc-install]: https://grpc.io/docs/protoc-installation/#install-pre-compiled-binaries-any-os
+[cross-install]: https://github.com/cross-rs/cross
+[just-install]: https://github.com/casey/just?tab=readme-ov-file#installation
