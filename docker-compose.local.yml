@@ -1,0 +1,34 @@
+# Docker compose file for local development
+
+services:
+  admin:
+    env_file:
+      - path: .env.admin
+        required: true
+    build:
+      context: .
+      dockerfile: services/admin/Dockerfile.local
+    environment:
+      - SOCKET_ADDR=0.0.0.0:8080
+      - SQLITE_DB_PATH=/app/data/db.sqlite3
+      - LOGS_DIR=/app/data/logs
+      - WORKER_ADDR=worker:50051
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./.tmp/admin:/app/data
+    depends_on:
+      - worker
+
+  worker:
+    env_file:
+      - path: .env.worker
+        required: true
+    build:
+      context: .
+      dockerfile: services/worker/Dockerfile.local
+    environment:
+      - RPC_ADDR=0.0.0.0:50051
+      - LOGS_DIR=/app/data/logs
+    volumes:
+      - ./.tmp/worker:/app/data
